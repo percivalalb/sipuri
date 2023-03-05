@@ -1,3 +1,8 @@
+// This file is a copy of the stdlib module url with some
+// tweaks to encode a ' ' as "%20" rather than a '+'.
+//
+// All credit goes to the Go Devs for unstanding of the RFC and
+// writing the stdlib url package.
 package sipuri
 
 import (
@@ -6,8 +11,6 @@ import (
 	"strings"
 )
 
-// This file is a copy of the stdlib module url with some tweaks to encode a ' ' as "%20" rather than a '+'
-// All credit goes there for unstanding of the RFC
 type encoding int
 
 const (
@@ -18,6 +21,7 @@ const (
 
 const upperhex = "0123456789ABCDEF"
 
+// Based on url.shouldEscape
 func shouldEscape(c byte, mode encoding) bool {
 	// §2.3 Unreserved characters (alphanum)
 	if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9' {
@@ -56,6 +60,7 @@ func shouldEscape(c byte, mode encoding) bool {
 	return true
 }
 
+// Based on url.escape
 func escape(s string, mode encoding) string {
 	var hexCount int
 	for i := 0; i < len(s); i++ {
@@ -89,6 +94,8 @@ func escape(s string, mode encoding) string {
 }
 
 // EncodeURLValues has the same as url.Values.Encode() but encodes spaces as "%20" rather than a '+'.
+//
+// Based on url.Values.Encode()
 func EncodeURLValues(v url.Values) string {
 	var buf strings.Builder
 	keys := make([]string, 0, len(v))
