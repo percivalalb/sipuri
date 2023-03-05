@@ -1,8 +1,8 @@
 # SIP URI Parser
 
-This module is a pure [Golang](https://go.dev/) implementation to parse URIs with the scheme `sip:` & `sips:`. It tries to adhere to the spec in [RFC-3261 19.1.1](https://www.rfc-editor.org/rfc/rfc3261#section-19.1.1).
+This module is a pure [Golang](https://go.dev/) implementation to parse URIs with the scheme `sip:` & `sips:`. It tries to adhere to the spec in [RFC-3261 19.1.1](https://www.rfc-editor.org/rfc/rfc3261#section-19.1.1). It is meant to be small and efficent and require no libraries outside the [standard lib](https://pkg.go.dev/std).
 
-Requires go 1.16+ (tested up to 1.20)
+Requires go 1.16+ (tested on 1.20)
 
 ```console
 go get github.com/percivalalb/sipuri
@@ -15,23 +15,30 @@ package main
 
 import (
     "fmt"
+    "log"
 
     "github.com/percivalalb/sipuri"
 )
 
 func main() {
-    sipURI, _ := sipuri.Parse("sip:user:password@host:port;uri-parameters?headers")
+    // Parse the URI. Errors on unexpected schemes or malformed URIs
+    sipURI, err := sipuri.Parse("sip:user:password@host:port;uri-parameters?headers")
+    if err != nil {
+        log.Fatal(err)
+    }
 
+    // Print the consistent components
     fmt.Println(sipURI.User) // user
     fmt.Println(sipURI.Pass) // password
     fmt.Println(sipURI.Host) // host:port
-	fmt.Printf("%v\n", sipURI.Params)  // map[uri-parameters:[]]
-	fmt.Printf("%v\n", sipURI.Headers) // map[headers:[]]
+    fmt.Printf("%v\n", sipURI.Params)  // map[uri-parameters:[]]
+    fmt.Printf("%v\n", sipURI.Headers) // map[headers:[]]
 
+    // Re-construct the URI
     fmt.Println(sipURI.String()) // sip:user:password@host:port;uri-parameters=?headers=
 }
 ```
 
 ## Disclaimer
 
-The module should correctly parses common `sip:` & `sips:` URIs, the module has yet to be thoroughly tested against outliers. Please report any issues, thanks!
+The module *should* parse common `sip:` & `sips:` URIs, thought the module has yet to be thoroughly tested against outliers. Please report any issues, thanks!
