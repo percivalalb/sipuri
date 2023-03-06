@@ -18,7 +18,6 @@ package main
 
 import (
     "fmt"
-    "log"
 
     "github.com/percivalalb/sipuri"
 )
@@ -27,7 +26,7 @@ func main() {
     // Parse the URI. Errors on unexpected schemes or malformed URIs
     sipURI, err := sipuri.Parse("sip:user:password@host:port;uri-parameters?headers")
     if err != nil {
-        log.Fatal(err)
+        panic(err)
     }
 
     // Print the consistent components
