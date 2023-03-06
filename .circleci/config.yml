@@ -1,0 +1,34 @@
+version: 2.1
+
+jobs:
+  test:
+    working_directory: ~/repo
+    docker:
+      - image: cimg/go:1.20
+    resource_class: small # 1 vCPU, 2GB RAM 
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - go-mod-v4-{{ checksum "go.sum" }}
+      - run:
+          name: Install Dependencies
+          command: go mod download
+      - save_cache:
+          key: go-mod-v4-{{ checksum "go.sum" }}
+          paths:
+            - "/go/pkg/mod"
+      - run:
+          name: Run tests
+          command: |
+            gotestsum --junitfile report.xml --format testname -- -coverprofile=coverage.txt -race -v
+            go tool cover -html=coverage.txt -o coverage.html
+      - store_test_results:
+          path: report.xml
+      - store_artifacts:
+          path: coverage.html
+
+workflows:
+  test:
+    jobs:
+      - test
