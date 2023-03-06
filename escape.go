@@ -1,8 +1,3 @@
-// This file is a copy of the stdlib module url with some
-// tweaks to encode a ' ' as "%20" rather than a '+'.
-//
-// All credit goes to the Go Devs for unstanding of the RFC and
-// writing the stdlib url package.
 package sipuri
 
 import (
@@ -10,6 +5,12 @@ import (
 	"sort"
 	"strings"
 )
+
+// This file is a copy of the stdlib module url with some
+// tweaks to encode a ' ' as "%20" rather than a '+'.
+//
+// All credit goes to the Go Devs for unstanding of the RFC and
+// writing the stdlib url package.
 
 type encoding int
 
