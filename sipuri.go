@@ -133,7 +133,7 @@ func (sipURI URI) String() string {
 	}
 
 	if len(sipURI.Params) > 0 {
-		sb.WriteString(EncodeURLValues(sipURI.Params))
+		sb.WriteString(encodeURLValues(sipURI.Params))
 	}
 
 	if sipURI.hadHeader || len(sipURI.Headers) > 0 {
@@ -141,7 +141,7 @@ func (sipURI URI) String() string {
 	}
 
 	if len(sipURI.Headers) > 0 {
-		sb.WriteString(EncodeURLValues(sipURI.Headers))
+		sb.WriteString(encodeURLValues(sipURI.Headers))
 	}
 
 	return sb.String()
