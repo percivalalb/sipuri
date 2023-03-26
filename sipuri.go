@@ -43,7 +43,10 @@ type URI struct {
 
 // SplitHostPort splits the port from the host portion into.
 func (sipURI URI) SplitHostPort() (string, string, error) {
-	if strings.Contains(sipURI.Host, ":") {
+	ipv6 := len(sipURI.Host) > 0 && sipURI.Host[0] == '['
+	colonCount := strings.Count(sipURI.Host, ":")
+
+	if (!ipv6 && colonCount > 0) || (ipv6 && (colonCount%2 == 1 || sipURI.Host[len(sipURI.Host)-1] != ']')) {
 		return net.SplitHostPort(sipURI.Host) //nolint:wrapcheck
 	}
 
@@ -155,13 +158,12 @@ func Parse(uri string) (*URI, error) {
 		return parse(SIPS, uri[len(SIPSProtocol):])
 	}
 
-	return nil, InvalidSchemeError{}
+	return nil, ErrInvalidScheme
 }
 
+//nolint:cyclop,funlen
 func parse(proto Protocol, uri string) (*URI, error) {
-	sipURI := URI{
-		Proto: proto,
-	}
+	sipURI := URI{Proto: proto}
 
 	// @ in the set of reserved chars of the user portion. Therefore the first
 	userinfo, postfix, hasAt := strings.Cut(uri, "@") // @ must be encoded in the host and pass
@@ -169,7 +171,7 @@ func parse(proto Protocol, uri string) (*URI, error) {
 	if hasAt {
 		// §19.1.1 "If the @ sign is present in a SIP or SIPS URI, the user field MUST NOT be empty."
 		if userinfo == "" {
-			return nil, MalformedURIError{}
+			return nil, MalformedURIError{Cause: MissingUser}
 		}
 	} else {
 		userinfo, postfix = postfix, userinfo // swap (makes userinfo empty)
@@ -177,7 +179,7 @@ func parse(proto Protocol, uri string) (*URI, error) {
 
 	// The uri must have been a single '@'
 	if postfix == "" {
-		return nil, MalformedURIError{}
+		return nil, MalformedURIError{Cause: MissingHost}
 	}
 
 	prefix, headers, hadHeader := strings.Cut(postfix, "?")
@@ -185,7 +187,7 @@ func parse(proto Protocol, uri string) (*URI, error) {
 
 	// §19.1.2 host mandatory in all contexts
 	if host == "" {
-		return nil, MalformedURIError{}
+		return nil, MalformedURIError{Cause: MissingHost}
 	}
 
 	sipURI.hadHeader = hadHeader
@@ -197,24 +199,37 @@ func parse(proto Protocol, uri string) (*URI, error) {
 	// Hack: to work around stdlib decoding "+" as whitespace.
 	user, err := url.QueryUnescape(strings.ReplaceAll(sipURI.User, "+", "%2B"))
 	if err != nil {
-		return nil, MalformedURIError{Err: err}
+		return nil, MalformedURIError{Cause: MalformedUser, Err: err}
 	}
 
 	sipURI.User = user
+
+	// Typically the host should not contain any escaped characters but
+	// it is possible in the spec.
+	host, err = url.QueryUnescape(host)
+	if err != nil {
+		return nil, MalformedURIError{Cause: MalformedHost, Err: err}
+	}
+
 	sipURI.Host = host
 
 	if params != "" {
 		var err error
 		if sipURI.Params, err = url.ParseQuery(params); err != nil {
-			return nil, MalformedURIError{Err: err}
+			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
 		}
 	}
 
 	if headers != "" {
 		var err error
 		if sipURI.Headers, err = url.ParseQuery(headers); err != nil {
-			return nil, MalformedURIError{Err: err}
+			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}
 		}
+	}
+
+	// Check the host port is not malformed
+	if _, _, err := sipURI.SplitHostPort(); err != nil {
+		return nil, MalformedURIError{Cause: MalformedHost, Err: err}
 	}
 
 	return &sipURI, nil

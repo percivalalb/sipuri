@@ -19,22 +19,17 @@ func TestParse(t *testing.T) {
 	}
 
 	tests := []test{
-		{
-			"sip:user:password@host:port;uri-parameters=?headers=",
-			sipuri.URI{
-				User: "user",
-				Pass: "password",
-				Host: "host:port",
-				Params: map[string][]string{
-					"uri-parameters": {""},
-				},
-				Headers: map[string][]string{
-					"headers": {""},
-				},
+		{"sip:user:password@host:port;uri-parameters=?headers=", sipuri.URI{
+			User: "user",
+			Pass: "password",
+			Host: "host:port",
+			Params: map[string][]string{
+				"uri-parameters": {""},
 			},
-			"UDP",
-			"template uri",
-		},
+			Headers: map[string][]string{
+				"headers": {""},
+			},
+		}, "UDP", "template uri"},
 
 		// From https://www.rfc-editor.org/rfc/rfc3261#section-19.1.1
 		{"sip:alice@atlanta.com", sipuri.URI{
@@ -104,7 +99,6 @@ func TestParse(t *testing.T) {
 			User: "bob.smith",
 			Host: "nokia.com",
 		}, "UDP", "O'Reilly example #1"},
-
 		{"sip:bob@nokia.com;transport=tcp", sipuri.URI{
 			User: "bob",
 			Host: "nokia.com",
@@ -112,7 +106,6 @@ func TestParse(t *testing.T) {
 				"transport": {"tcp"},
 			},
 		}, "TCP", "O'Reilly example #2"},
-
 		{"sip:+1-212-555-1234@gw.com;user=phone", sipuri.URI{
 			User: "+1-212-555-1234",
 			Host: "gw.com",
@@ -120,12 +113,10 @@ func TestParse(t *testing.T) {
 				"user": {"phone"},
 			},
 		}, "UDP", "O'Reilly example #3"},
-
 		{"sip:root@136.16.20.100:8001", sipuri.URI{
 			User: "root",
 			Host: "136.16.20.100:8001",
 		}, "UDP", "O'Reilly example #4"},
-
 		{"sip:bob.smith@registrar.com;method=REGISTER", sipuri.URI{
 			User: "bob.smith",
 			Host: "registrar.com",
@@ -133,6 +124,13 @@ func TestParse(t *testing.T) {
 				"method": {"REGISTER"},
 			},
 		}, "UDP", "O'Reilly example #5"},
+
+		{"sip:[::]", sipuri.URI{
+			Host: "[::]",
+		}, "UDP", "IPv6 local address"},
+		{"sip:[::]:1111", sipuri.URI{
+			Host: "[::]:1111",
+		}, "UDP", "IPv6 local address"},
 	}
 
 	for _, test := range tests {
@@ -165,11 +163,66 @@ func TestParseError(t *testing.T) {
 	}
 
 	tests := []test{
-		{"user@example.sip.twilio.com;transport=TCP", sipuri.InvalidSchemeError{}, "no scheme present"},
-		{"sip:user@", sipuri.MalformedURIError{}, "no host present"},
-		{"sip:@", sipuri.MalformedURIError{}, "lonely at symbol"},
-		{"sip:@example.sip.twilio.com", sipuri.MalformedURIError{}, "no user present"},
-		{"sip:user@example.sip.twilio.com;%a", sipuri.MalformedURIError{}, "malformed url encoded params"},
+		{
+			"user@example.sip.twilio.com;transport=TCP",
+			sipuri.ErrInvalidScheme,
+			"no scheme present",
+		},
+		{
+			"sip:user@",
+			sipuri.MalformedURIError{Cause: sipuri.MissingHost},
+			"no host present",
+		},
+		{
+			"sip:@",
+			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			"lonely at symbol",
+		},
+		{
+			"sip:@;",
+			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			"lonely at symbol",
+		},
+		{
+			"sip:user@;",
+			sipuri.MalformedURIError{Cause: sipuri.MissingHost},
+			"lonely at symbol",
+		},
+		{
+			"sip:@example.sip.twilio.com",
+			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			"no user present",
+		},
+		{
+			"sip:%xx@example.sip.twilio.com",
+			sipuri.MalformedURIError{Cause: sipuri.MalformedUser},
+			"malformed url encoded users",
+		},
+		{
+			"sip:user@%xxexample.sip.twilio.com",
+			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			"malformed url encoded host",
+		},
+		{
+			"sip:%xxexample.sip.twilio.com",
+			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			"malformed url encoded host",
+		},
+		{
+			"sip:user@example.sip.twilio.com;%xx",
+			sipuri.MalformedURIError{Cause: sipuri.MalformedParams},
+			"malformed url encoded params",
+		},
+		{
+			"sip:user@example.sip.twilio.com?%xx",
+			sipuri.MalformedURIError{Cause: sipuri.MalformedHeaders},
+			"malformed url encoded headers",
+		},
+		{
+			"sip:[::1",
+			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			"malformed ipv6 host",
+		},
 	}
 
 	for _, test := range tests {
