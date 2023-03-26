@@ -43,7 +43,10 @@ type URI struct {
 
 // SplitHostPort splits the port from the host portion into.
 func (sipURI URI) SplitHostPort() (string, string, error) {
-	if strings.Contains(sipURI.Host, ":") {
+	ipv6 := len(sipURI.Host) > 0 && sipURI.Host[0] == '['
+	colonCount := strings.Count(sipURI.Host, ":")
+
+	if (!ipv6 && colonCount > 0) || (ipv6 && (colonCount%2 == 1 || sipURI.Host[len(sipURI.Host)-1] != ']')) {
 		return net.SplitHostPort(sipURI.Host) //nolint:wrapcheck
 	}
 
@@ -158,7 +161,7 @@ func Parse(uri string) (*URI, error) {
 	return nil, ErrInvalidScheme
 }
 
-//nolint:funlen
+//nolint:cyclop,funlen
 func parse(proto Protocol, uri string) (*URI, error) {
 	sipURI := URI{Proto: proto}
 
@@ -222,6 +225,11 @@ func parse(proto Protocol, uri string) (*URI, error) {
 		if sipURI.Headers, err = url.ParseQuery(headers); err != nil {
 			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}
 		}
+	}
+
+	// Check the host port is not malformed
+	if _, _, err := sipURI.SplitHostPort(); err != nil {
+		return nil, MalformedURIError{Cause: MalformedHost, Err: err}
 	}
 
 	return &sipURI, nil

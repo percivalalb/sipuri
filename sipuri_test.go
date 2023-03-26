@@ -124,6 +124,13 @@ func TestParse(t *testing.T) {
 				"method": {"REGISTER"},
 			},
 		}, "UDP", "O'Reilly example #5"},
+
+		{"sip:[::]", sipuri.URI{
+			Host: "[::]",
+		}, "UDP", "IPv6 local address"},
+		{"sip:[::]:1111", sipuri.URI{
+			Host: "[::]:1111",
+		}, "UDP", "IPv6 local address"},
 	}
 
 	for _, test := range tests {
@@ -172,6 +179,16 @@ func TestParseError(t *testing.T) {
 			"lonely at symbol",
 		},
 		{
+			"sip:@;",
+			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			"lonely at symbol",
+		},
+		{
+			"sip:user@;",
+			sipuri.MalformedURIError{Cause: sipuri.MissingHost},
+			"lonely at symbol",
+		},
+		{
 			"sip:@example.sip.twilio.com",
 			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
 			"no user present",
@@ -200,6 +217,11 @@ func TestParseError(t *testing.T) {
 			"sip:user@example.sip.twilio.com?%xx",
 			sipuri.MalformedURIError{Cause: sipuri.MalformedHeaders},
 			"malformed url encoded headers",
+		},
+		{
+			"sip:[::1",
+			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			"malformed ipv6 host",
 		},
 	}
 
