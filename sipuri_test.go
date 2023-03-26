@@ -1,6 +1,7 @@
 package sipuri_test
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 
@@ -18,7 +19,8 @@ func TestParse(t *testing.T) {
 	}
 
 	tests := []test{
-		{"sip:user:password@host:port;uri-parameters=?headers=",
+		{
+			"sip:user:password@host:port;uri-parameters=?headers=",
 			sipuri.URI{
 				User: "user",
 				Pass: "password",
@@ -131,22 +133,10 @@ func TestParse(t *testing.T) {
 				"method": {"REGISTER"},
 			},
 		}, "UDP", "O'Reilly example #5"},
-
-		{"alb@t2hws4-netcraft.sip.twilio.com;transport=TCP", sipuri.URI{}, "", "ada"},
-		{"sip:alb@", sipuri.URI{}, "", "asdas"},
-		{"sip:@", sipuri.URI{}, "", "asdas"},
 	}
 
 	for _, test := range tests {
 		sipURI, err := sipuri.Parse(test.uri)
-
-		if test.sipURI.Host == "" {
-			if err == nil {
-				t.Fatalf(`expected error %s`, test.msg)
-			}
-			continue
-		}
-
 		if err != nil {
 			t.Fatalf(`failed to parse SIP URI %q, %v error`, test.uri, err)
 		}
@@ -165,7 +155,35 @@ func TestParse(t *testing.T) {
 	}
 }
 
+func TestParseError(t *testing.T) {
+	t.Parallel()
+
+	type test struct {
+		uri string
+		err error
+		msg string
+	}
+
+	tests := []test{
+		{"user@example.sip.twilio.com;transport=TCP", sipuri.InvalidSchemeError{}, "no scheme present"},
+		{"sip:user@", sipuri.MalformedURIError{}, "no host present"},
+		{"sip:@", sipuri.MalformedURIError{}, "lonely at symbol"},
+		{"sip:@example.sip.twilio.com", sipuri.MalformedURIError{}, "no user present"},
+		{"sip:user@example.sip.twilio.com;%a", sipuri.MalformedURIError{}, "malformed url encoded params"},
+	}
+
+	for _, test := range tests {
+		_, err := sipuri.Parse(test.uri)
+
+		if !errors.Is(err, test.err) {
+			t.Fatalf(`expected error %q but got %q in %s`, test.err, err, test.msg)
+		}
+	}
+}
+
 func equalF(t *testing.T, e interface{}, g interface{}, m string, a ...interface{}) {
+	t.Helper()
+
 	if e != g {
 		t.Fatalf(`%q != %q, %s`, e, g, fmt.Sprintf(m, a...))
 	}

@@ -44,13 +44,14 @@ type URI struct {
 // SplitHostPort splits the port from the host portion into.
 func (sipURI URI) SplitHostPort() (string, string, error) {
 	if strings.Contains(sipURI.Host, ":") {
-		return net.SplitHostPort(sipURI.Host)
+		return net.SplitHostPort(sipURI.Host) //nolint:wrapcheck
 	}
 
 	return sipURI.Host, "", nil
 }
 
-// Transport returns the Transport protocols
+// Transport returns the Transport protocols that would be used to make a
+// connection to the host.
 func (sipURI URI) Transport() string {
 	if transport := sipURI.Params.Get("transport"); transport != "" {
 		return strings.ToUpper(transport)
@@ -60,8 +61,10 @@ func (sipURI URI) Transport() string {
 	switch sipURI.Proto {
 	case SIP:
 		return "UDP"
-	default: //case SIPS:
+	case SIPS:
 		return "TCP"
+	default:
+		panic("unreachable")
 	}
 }
 
@@ -79,72 +82,67 @@ func (sipURI URI) Port() string {
 	// §19.1.2 says "The default port value is transport and scheme dependent.
 	// The default is 5060 for sip: using UDP, TCP, or SCTP. The default
 	// is 5061 for sip: using TLS over TCP and sips: over TCP."
-	switch sipURI.Proto {
-	case SIPS:
+	if sipURI.Proto == SIPS {
 		return "5061"
-		// TODO: Handle case for sip using TLS over TCP.
 	}
 
-	// case SIP:
-
 	switch sipURI.Transport() {
-	case "UDP":
-	case "TCP":
-	case "SCTP":
+	case "UDP", "TCP", "SCTP":
 		return "5060"
+	// "The default is 5061 for sip: using TLS over TCP"
+	case "TLS":
+		return "5061"
 	}
 
 	return ""
 }
 
-// Strings rebuilds the string representation of the URI respecting the
+// Strings rebuilds the string representation of the URI respecting the quirks of the input.
+//
+//nolint:cyclop
 func (sipURI URI) String() string {
-	var sb strings.Builder
+	var builder strings.Builder
 
 	switch sipURI.Proto {
 	case SIPS:
-		sb.WriteString(SIPSProtocol)
-	default:
-		sb.WriteString(SIPProtocol)
+		builder.WriteString(SIPSProtocol)
+	case SIP:
+		builder.WriteString(SIPProtocol)
 	}
 
 	if sipURI.User != "" {
-		// TODO: QueryEscapes all reserved chars.
-		// The RFC allows ';', ':', '&', '=', '+', '$', and ',' in
-		// userinfo, so we must escape only '@', '/', and '?'.
-
-		sb.WriteString(escape(sipURI.User, encodeUserPassword))
+		builder.WriteString(escape(sipURI.User, encodeUserPassword))
 
 		if sipURI.hadPass || sipURI.Pass != "" {
-			sb.WriteRune(':')
+			builder.WriteRune(':')
 		}
 
 		if sipURI.Pass != "" {
-			sb.WriteString(escape(sipURI.Pass, encodeUserPassword))
+			builder.WriteString(escape(sipURI.Pass, encodeUserPassword))
 		}
 
-		sb.WriteByte('@') // only present when user is non-empty
+		builder.WriteByte('@') // only present when user is non-empty
 	}
 
-	sb.WriteString(escape(sipURI.Host, encodeHost))
+	builder.WriteString(escape(sipURI.Host, encodeHost))
 
 	if sipURI.hadParam || len(sipURI.Params) > 0 {
-		sb.WriteByte(';')
+		builder.WriteByte(';')
 	}
 
 	if len(sipURI.Params) > 0 {
-		sb.WriteString(encodeURLValues(sipURI.Params))
+		builder.WriteString(EncodeURLValues(sipURI.Params))
 	}
 
 	if sipURI.hadHeader || len(sipURI.Headers) > 0 {
-		sb.WriteByte('?')
+		builder.WriteByte('?')
 	}
 
 	if len(sipURI.Headers) > 0 {
-		sb.WriteString(encodeURLValues(sipURI.Headers))
+		builder.WriteString(EncodeURLValues(sipURI.Headers))
 	}
 
-	return sb.String()
+	return builder.String()
 }
 
 // Parse parses the given uri.
@@ -157,7 +155,7 @@ func Parse(uri string) (*URI, error) {
 		return parse(SIPS, uri[len(SIPSProtocol):])
 	}
 
-	return nil, ErrInvalidScheme{}
+	return nil, InvalidSchemeError{}
 }
 
 func parse(proto Protocol, uri string) (*URI, error) {
@@ -171,7 +169,7 @@ func parse(proto Protocol, uri string) (*URI, error) {
 	if hasAt {
 		// §19.1.1 "If the @ sign is present in a SIP or SIPS URI, the user field MUST NOT be empty."
 		if userinfo == "" {
-			return nil, ErrMalformedURI{}
+			return nil, MalformedURIError{}
 		}
 	} else {
 		userinfo, postfix = postfix, userinfo // swap (makes userinfo empty)
@@ -179,7 +177,7 @@ func parse(proto Protocol, uri string) (*URI, error) {
 
 	// The uri must have been a single '@'
 	if postfix == "" {
-		return nil, ErrMalformedURI{}
+		return nil, MalformedURIError{}
 	}
 
 	prefix, headers, hadHeader := strings.Cut(postfix, "?")
@@ -187,7 +185,7 @@ func parse(proto Protocol, uri string) (*URI, error) {
 
 	// §19.1.2 host mandatory in all contexts
 	if host == "" {
-		return nil, ErrMalformedURI{}
+		return nil, MalformedURIError{}
 	}
 
 	sipURI.hadHeader = hadHeader
@@ -196,27 +194,26 @@ func parse(proto Protocol, uri string) (*URI, error) {
 	// RFC requires : to be escaped in the userinfo. So split on :.
 	sipURI.User, sipURI.Pass, sipURI.hadPass = strings.Cut(userinfo, ":")
 
-	var err error
-	// TODO: propertly unescape userinfo.
-	sipURI.User = strings.ReplaceAll(sipURI.User, "+", "%2B")
-	sipURI.User, err = url.QueryUnescape(sipURI.User) // encodes + since go libary decodes + as whitespace
+	// Hack: to work around stdlib decoding "+" as whitespace.
+	user, err := url.QueryUnescape(strings.ReplaceAll(sipURI.User, "+", "%2B"))
 	if err != nil {
-		return nil, ErrMalformedURI{Err: err}
+		return nil, MalformedURIError{Err: err}
 	}
 
+	sipURI.User = user
 	sipURI.Host = host
 
 	if params != "" {
 		var err error
 		if sipURI.Params, err = url.ParseQuery(params); err != nil {
-			return nil, ErrMalformedURI{Err: err}
+			return nil, MalformedURIError{Err: err}
 		}
 	}
 
 	if headers != "" {
 		var err error
 		if sipURI.Headers, err = url.ParseQuery(headers); err != nil {
-			return nil, ErrMalformedURI{Err: err}
+			return nil, MalformedURIError{Err: err}
 		}
 	}
 
