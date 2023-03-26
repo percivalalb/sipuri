@@ -24,34 +24,36 @@ const (
 //
 // Based on stdlib url.shouldEscape implementation & derived and checked with
 // the RFC https://www.rfc-editor.org/rfc/rfc3986#section-2
-func (mode encoding) shouldEscape(c byte) bool {
+//
+//nolint:cyclop
+func (mode encoding) shouldEscape(char byte) bool {
 	// §2.3 Unreserved characters (alphanum)
-	if 'a' <= c && c <= 'z' || 'A' <= c && c <= 'Z' || '0' <= c && c <= '9' {
+	if 'a' <= char && char <= 'z' || 'A' <= char && char <= 'Z' || '0' <= char && char <= '9' {
 		return false
 	}
 
 	if mode == encodeHost {
 		// §3.2.2 Host allows:
-		switch c {
+		switch char {
 		case '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '=', ':', '[', ']', '<', '>', '"':
 			return false
 		}
 	}
 
-	switch c {
+	switch char {
 	case '-', '_', '.', '~': // §2.3 Unreserved characters (mark)
 		return false
 
 	case '$', '&', '+', ',', '/', ':', ';', '=', '?', '@': // §2.2 Reserved characters (reserved)
 		// Different sections of the URI allow a few of
 		// the reserved characters to appear unescaped.
-		switch mode {
+		switch mode { //nolint:exhaustive
 		case encodeUserPassword: // §3.2.1
 			// The RFC allows ';', ':', '&', '=', '+', '$', and ',' in
 			// userinfo, so we must escape only '@', '/', and '?'.
 			// The parsing of userinfo treats ':' as special so we must escape
 			// that too.
-			return c == '@' || c == '/' || c == '?' || c == ':'
+			return char == '@' || char == '/' || char == '?' || char == ':'
 		case encodeQueryComponent: // §3.4
 			// The RFC reserves (so we must escape) everything.
 			return true
@@ -65,34 +67,37 @@ func (mode encoding) shouldEscape(c byte) bool {
 // escape encodes characters based on the context of the string
 //
 // Based on url.escape but tweaked and optimised.
-func escape(s string, mode encoding) string {
+func escape(input string, mode encoding) string {
 	var hexCount int
-	for i := 0; i < len(s); i++ {
-		if mode.shouldEscape(s[i]) {
+
+	for i := 0; i < len(input); i++ {
+		if mode.shouldEscape(input[i]) {
 			hexCount++
 		}
 	}
 
 	// short-circuit in case no escaping is required
 	if hexCount == 0 {
-		return s
+		return input
 	}
 
-	required := len(s) + 2*hexCount
-	t := make([]byte, required)
+	required := len(input) + 2*hexCount //nolint:gomnd
+	result := make([]byte, required)
 
-	escapeInto(s, 0, t)
+	escapeInto(input, 0, result)
 
-	return string(t)
+	return string(result)
 }
 
-// encodeURLValues encodes all non-alpha numeric byte values;
+// EncodeURLValues encodes all non-alpha numeric byte values;
 // notibly it encodes spaces as "%20" rather than a '+'.
 //
 // Based on url.Values.Encode() but encodes spaces differently.
-// It is also slightly more efficent at 10% faster, with around 35% less
+// It is also slightly more efficient at 10% faster, with around 35% less
 // bytes written & over half the allocations per operation.
-func encodeURLValues(input url.Values) string {
+//
+//nolint:cyclop
+func EncodeURLValues(input url.Values) string {
 	// short-circuit in the empty case
 	keyCount := len(input)
 	if keyCount == 0 {
@@ -102,70 +107,72 @@ func encodeURLValues(input url.Values) string {
 	var charCount, hexCount, keyValuesCount int
 
 	keys := make([]string, 0, keyCount)
-	for k, vs := range input {
-		keys = append(keys, k)
-		vsCount := len(vs)
+	for key, vals := range input {
+		keys = append(keys, key)
+		vsCount := len(vals)
 
-		for i := 0; i < len(k); i++ {
-			if encodeQueryComponent.shouldEscape(k[i]) {
+		for i := 0; i < len(key); i++ {
+			if encodeQueryComponent.shouldEscape(key[i]) {
 				hexCount += vsCount
 			}
 		}
 
-		charCount += len(k) * vsCount
+		charCount += len(key) * vsCount
 		keyValuesCount += vsCount
 
-		for _, v := range vs {
-			for i := 0; i < len(v); i++ {
-				if encodeQueryComponent.shouldEscape(v[i]) {
+		for _, val := range vals {
+			for i := 0; i < len(val); i++ {
+				if encodeQueryComponent.shouldEscape(val[i]) {
 					hexCount++
 				}
 			}
 
-			charCount += len(v)
+			charCount += len(val)
 		}
 	}
 
 	required := charCount + // total characters in the keys
 		2*hexCount + // additional characters due to the encoding %xx that's two more x's
-		2*keyValuesCount - 1 // seperating & and =
-	t := make([]byte, required)
+		2*keyValuesCount - 1 // separating & and =
+	result := make([]byte, required)
 
 	sort.Strings(keys)
 
-	j := 0
-	for _, k := range keys {
-		for _, v := range input[k] {
-			if j > 0 {
-				t[j] = '&'
-				j++
+	pos := 0
+
+	for _, key := range keys {
+		for _, val := range input[key] {
+			if pos > 0 {
+				result[pos] = '&'
+				pos++
 			}
 
-			j = escapeInto(k, j, t)
-			t[j] = '='
-			j = escapeInto(v, j+1, t)
+			pos = escapeInto(key, pos, result)
+			result[pos] = '='
+			pos = escapeInto(val, pos+1, result)
 		}
 	}
 
-	return string(t)
+	return string(result)
 }
 
 const upperhex = "0123456789ABCDEF"
 
-// escapeInto escapes all of v, writing the result into t starting at index 0.
-func escapeInto(v string, o int, t []byte) int {
-	for i := 0; i < len(v); i++ {
-		switch c := v[i]; {
+// escapeInto escapes all of "input", writing the "result" into target
+// starting at index "offset".
+func escapeInto(input string, offset int, target []byte) int {
+	for pos := 0; pos < len(input); pos++ {
+		switch c := input[pos]; {
 		case encodeQueryComponent.shouldEscape(c):
-			t[o] = '%'
-			t[o+1] = upperhex[c>>4]
-			t[o+2] = upperhex[c&15]
-			o += 3
+			target[offset] = '%'
+			target[offset+1] = upperhex[c>>4]
+			target[offset+2] = upperhex[c&15]
+			offset += 3
 		default:
-			t[o] = v[i]
-			o++
+			target[offset] = input[pos]
+			offset++
 		}
 	}
 
-	return o
+	return offset
 }
