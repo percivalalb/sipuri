@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  golangci-lint: valimail/golangci-lint@0.2.0
+
 jobs:
   test:
     working_directory: ~/repo
@@ -32,3 +35,5 @@ workflows:
   test:
     jobs:
       - test
+      - golangci-lint/lint:
+          tag: v1.52.2
