@@ -101,14 +101,14 @@ func DecodeURLValues(input string, separator string) (url.Values, error) {
 	result := make(url.Values, len(pairs))
 
 	for _, pair := range pairs {
-		split := strings.SplitN(pair, "=", 2) //nolint:gomnd
+		key, value, _ := strings.Cut(pair, "=")
 
-		key, err := Unescape(split[0])
+		key, err := Unescape(key)
 		if err != nil {
 			return nil, err
 		}
 
-		value, err := Unescape(split[1])
+		value, err = Unescape(value)
 		if err != nil {
 			return nil, err
 		}

@@ -3,6 +3,7 @@ package sipuri_test
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/percivalalb/sipuri"
@@ -234,10 +235,35 @@ func TestParseError(t *testing.T) {
 	}
 }
 
+func ExampleParse() {
+	sipURI, err := sipuri.Parse("sip:user:password@host:port;uri-parameters?headers")
+	if err != nil {
+		panic(err)
+	}
+
+	// Print the consistent components
+	fmt.Println(sipURI.User)
+	fmt.Println(sipURI.Pass)
+	fmt.Println(sipURI.Host)
+	fmt.Printf("%v\n", sipURI.Params)
+	fmt.Printf("%v\n", sipURI.Headers)
+
+	// Re-construct the URI
+	fmt.Println(sipURI.String())
+
+	// Output:
+	// user
+	// password
+	// host:port
+	// map[uri-parameters:[]]
+	// map[headers:[]]
+	// sip:user:password@host:port;uri-parameters=?headers=
+}
+
 func equalF(t *testing.T, e interface{}, g interface{}, m string, a ...interface{}) {
 	t.Helper()
 
-	if e != g {
+	if !reflect.DeepEqual(e, g) {
 		t.Fatalf(`%q != %q, %s`, e, g, fmt.Sprintf(m, a...))
 	}
 }
