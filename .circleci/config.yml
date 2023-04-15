@@ -7,7 +7,7 @@ jobs:
   test:
     working_directory: ~/repo
     docker:
-      - image: cimg/go:1.20.2
+      - image: cimg/go:1.20.3
     resource_class: small # 1 vCPU, 2GB RAM 
     steps:
       - checkout
