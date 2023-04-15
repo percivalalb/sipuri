@@ -17,6 +17,58 @@ func TestURLEncodeURLValues(t *testing.T) {
 	equalF(t, testQueryString, got, "encodeURLValues(%v) = %q want %q", query, got, testQueryString)
 }
 
+func TestURLDecodeURLValues(t *testing.T) {
+	t.Parallel()
+
+	type test struct {
+		input  string
+		expect url.Values
+		msg    string
+	}
+
+	tests := []test{
+		{
+			"transport=TCP",
+			url.Values{
+				"transport": {"TCP"},
+			},
+			"single key-value pair",
+		},
+		{
+			"transport=",
+			url.Values{
+				"transport": {""},
+			},
+			"singleton",
+		},
+		{
+			"transport",
+			url.Values{
+				"transport": {""},
+			},
+			"singleton",
+		},
+		{
+			"transport=TCP;user=percivalalb;group=polarbear",
+			url.Values{
+				"transport": {"TCP"},
+				"user":      {"percivalalb"},
+				"group":     {"polarbear"},
+			},
+			"multiple key-value pairs",
+		},
+	}
+
+	for _, test := range tests {
+		result, err := sipuri.DecodeURLValues(test.input, ";")
+		if err != nil {
+			t.Fatalf("err %v", err)
+		}
+
+		equalF(t, test.expect, result, test.msg)
+	}
+}
+
 func TestUnescape(t *testing.T) {
 	t.Parallel()
 

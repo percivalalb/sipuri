@@ -3,6 +3,7 @@ package sipuri_test
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"testing"
 
 	"github.com/percivalalb/sipuri"
@@ -262,7 +263,7 @@ func ExampleParse() {
 func equalF(t *testing.T, e interface{}, g interface{}, m string, a ...interface{}) {
 	t.Helper()
 
-	if e != g {
+	if !reflect.DeepEqual(e, g) {
 		t.Fatalf(`%q != %q, %s`, e, g, fmt.Sprintf(m, a...))
 	}
 }
