@@ -3,6 +3,7 @@ package sipuri
 import (
 	"net/url"
 	"sort"
+	"strings"
 )
 
 // This file is an alternative to the stdlib module url with some
@@ -89,6 +90,35 @@ func escape(input string, mode encoding) string {
 	return string(result)
 }
 
+// DecodeURLValues decodes the input into the url.Values type, spliting
+// key-value pairs on the separator.
+func DecodeURLValues(input string, separator string) (url.Values, error) {
+	pairs := strings.Split(input, separator)
+
+	// len(pairs) is the maximum number of unique keys possible. This may
+	// end up using more memory but in our use case duplicate keys are
+	// unlikely making this a worthy optimisation.
+	result := make(url.Values, len(pairs))
+
+	for _, pair := range pairs {
+		split := strings.SplitN(pair, "=", 2) //nolint:gomnd
+
+		key, err := Unescape(split[0])
+		if err != nil {
+			return nil, err
+		}
+
+		value, err := Unescape(split[1])
+		if err != nil {
+			return nil, err
+		}
+
+		result[key] = append(result[key], value)
+	}
+
+	return result, nil
+}
+
 // EncodeURLValues encodes all non-alpha numeric byte values;
 // notibly it encodes spaces as "%20" rather than a '+'.
 //
@@ -169,10 +199,89 @@ func escapeInto(input string, offset int, target []byte) int {
 			target[offset+2] = upperhex[c&15]
 			offset += 3
 		default:
-			target[offset] = input[pos]
+			target[offset] = c
 			offset++
 		}
 	}
 
 	return offset
+}
+
+// Unescape URL decodes the input.
+func Unescape(input string) (string, error) {
+	// Count how many escaped bytes there are and
+	// guarantee that they are all of 2 characters
+	// in length.
+	var hexCount int
+
+	for i := 0; i < len(input); i++ {
+		if input[i] == '%' {
+			hexCount++
+
+			i += 2
+
+			// not enought characters for
+			if i >= len(input) {
+				return "", EscapeError(input[i-2:])
+			}
+		}
+	}
+
+	// short-circuit in case no unescaping is required
+	if hexCount == 0 {
+		return input, nil
+	}
+
+	required := len(input) - 2*hexCount //nolint:gomnd
+	result := make([]byte, required)
+
+	_, err := unescapeInto(input, 0, result)
+	if err != nil {
+		return "", err
+	}
+
+	return string(result), nil
+}
+
+// 10000 = 16 in decimal.
+const hexCharErrorBit byte = 1 << 4
+
+func unescapeInto(input string, offset int, target []byte) (int, error) {
+	for pos := 0; pos < len(input); pos++ {
+		switch c := input[pos]; {
+		case c == '%':
+			gByte := checkValidHexCharacter(input[pos+1])
+			lByte := checkValidHexCharacter(input[pos+2])
+
+			if (gByte|lByte)&hexCharErrorBit != 0 {
+				return 0, EscapeError(input[pos : pos+3])
+			}
+
+			target[offset] = gByte<<4 + lByte //nolint:gomnd
+			offset++
+
+			pos += 2
+		default:
+			target[offset] = c
+			offset++
+		}
+	}
+
+	return offset, nil
+}
+
+func checkValidHexCharacter(hex byte) byte {
+	const alphabetStartIdx = 10
+
+	// Relies on the follow ranges being sequantial in ASCII/UTF-8 encoding.
+	switch {
+	case 'A' <= hex && hex <= 'F':
+		return hex - 'A' + alphabetStartIdx
+	case 'a' <= hex && hex <= 'f':
+		return hex - 'a' + alphabetStartIdx
+	case '0' <= hex && hex <= '9':
+		return hex - '0'
+	}
+
+	return hexCharErrorBit
 }

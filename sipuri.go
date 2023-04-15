@@ -215,14 +215,14 @@ func parse(proto Protocol, uri string) (*URI, error) {
 
 	if params != "" {
 		var err error
-		if sipURI.Params, err = url.ParseQuery(params); err != nil {
+		if sipURI.Params, err = DecodeURLValues(params, ";"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
 		}
 	}
 
 	if headers != "" {
 		var err error
-		if sipURI.Headers, err = url.ParseQuery(headers); err != nil {
+		if sipURI.Headers, err = DecodeURLValues(headers, "&"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}
 		}
 	}
