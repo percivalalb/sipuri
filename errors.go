@@ -2,6 +2,7 @@ package sipuri
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 )
 
@@ -84,4 +85,19 @@ func (err MalformedURIError) Is(input error) bool {
 // Unwrap returns the underlying error.
 func (err MalformedURIError) Unwrap() error {
 	return err.Err
+}
+
+// EscapeError is returned when a byte-pair has been incorrectly URL encoded.
+type EscapeError string
+
+// Error returns the string representation of the error.
+func (e EscapeError) Error() string {
+	return "sipuri: invalid URL escape " + strconv.Quote(string(e))
+}
+
+// Is makes EscapeError useable with errors.Is.
+func (e EscapeError) Is(input error) bool {
+	_, ok := input.(EscapeError) //nolint:errorlint
+
+	return ok
 }

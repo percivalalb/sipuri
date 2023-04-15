@@ -8,6 +8,10 @@ linters:
     - exhaustivestruct # deprecated and replaced by the above.
     - maligned         # deprecated and replaced by official fieldalignment.
 
+linters-settings:
+  varnamelen:
+    max-distance: 17 # default of 5 makes the linter annoying to use.
+
 issues:
   exclude-rules:
     # exclude some linters on test files.

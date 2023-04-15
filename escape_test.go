@@ -1,6 +1,7 @@
 package sipuri_test
 
 import (
+	"errors"
 	"net/url"
 	"testing"
 
@@ -11,12 +12,39 @@ func TestURLEncodeURLValues(t *testing.T) {
 	t.Parallel()
 
 	query := getTestURLValues()
-
 	got := sipuri.EncodeURLValues(query)
-	expect := "cat=meow&dog=bark%21&dog=woof%40&mouse=ee%20%20ee%CE%94&parrot=%28hellow%29"
 
-	if got != expect {
-		t.Fatalf("encodeURLValues(%v) = %q want %q", query, got, expect)
+	equalF(t, testQueryString, got, "encodeURLValues(%v) = %q want %q", query, got, testQueryString)
+}
+
+func TestUnescape(t *testing.T) {
+	t.Parallel()
+
+	expect := "cat=meow&dog=bark!&dog=woof@&mouse=ee  eeΔ&parrot=(hellow)"
+	got, _ := sipuri.Unescape(testQueryString)
+
+	equalF(t, expect, got, "Unescape(%q) = %q want %q", testQueryString, got, expect)
+}
+
+func TestUnescapeError(t *testing.T) {
+	t.Parallel()
+
+	_, err := sipuri.Unescape("bark%2y")
+
+	if !errors.Is(err, sipuri.EscapeError("%2y")) {
+		t.Fatalf("err %v", err)
+	}
+
+	_, err = sipuri.Unescape("bark%2")
+
+	if !errors.Is(err, sipuri.EscapeError("%2")) {
+		t.Fatalf("err %v", err)
+	}
+
+	_, err = sipuri.Unescape("bark%")
+
+	if !errors.Is(err, sipuri.EscapeError("%")) {
+		t.Fatalf("err %v", err)
 	}
 }
 
@@ -57,6 +85,24 @@ func BenchmarkEncodeURLValues(b *testing.B) {
 		_ = sipuri.EncodeURLValues(query)
 	}
 }
+
+func BenchmarkURLUnescape(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = url.QueryUnescape(testQueryString)
+	}
+}
+
+func BenchmarkUnescape(b *testing.B) {
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		_, _ = sipuri.Unescape(testQueryString)
+	}
+}
+
+const testQueryString = "cat=meow&dog=bark%21&dog=woof%40&mouse=ee%20%20ee%CE%94&parrot=%28hellow%29"
 
 func getTestURLValues() url.Values {
 	query := make(url.Values)
