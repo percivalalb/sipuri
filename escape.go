@@ -242,6 +242,10 @@ func Unescape(input string) (string, error) {
 	return string(result), nil
 }
 
+// UnescapeErrorChecker scans the input checking for malformed encoded entities.
+//
+// It is a stripped down version of Unescape without actually extracting the parts
+// or decoding the string it returns an error if and only if the aforementioned does.
 func UnescapeErrorChecker(input string) error {
 	l := len(input)
 	if input[l-1] == '%' {
@@ -250,7 +254,7 @@ func UnescapeErrorChecker(input string) error {
 		return EscapeError(input[l-2:])
 	}
 
-	for pos := 0; pos < len(input); pos++ {
+	for pos := 0; pos < l; pos++ {
 		switch c := input[pos]; {
 		case c == '%':
 			gByte := checkValidHexCharacter(input[pos+1])
