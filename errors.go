@@ -92,7 +92,7 @@ type EscapeError string
 
 // Error returns the string representation of the error.
 func (e EscapeError) Error() string {
-	return "sipuri: invalid URL escape " + strconv.Quote(string(e))
+	return "sip: invalid URL escape " + strconv.Quote(string(e))
 }
 
 // Is makes EscapeError useable with errors.Is.

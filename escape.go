@@ -1,7 +1,6 @@
 package sipuri
 
 import (
-	"net/url"
 	"sort"
 	"strings"
 )
@@ -92,13 +91,13 @@ func escape(input string, mode encoding) string {
 
 // DecodeURLValues decodes the input into the url.Values type, spliting
 // key-value pairs on the separator.
-func DecodeURLValues(input string, separator string) (url.Values, error) {
+func DecodeURLValues(input string, separator string) (KeyValuePairs, error) {
 	pairs := strings.Split(input, separator)
 
 	// len(pairs) is the maximum number of unique keys possible. This may
 	// end up using more memory but in our use case duplicate keys are
 	// unlikely making this a worthy optimisation.
-	result := make(url.Values, len(pairs))
+	result := make(KeyValuePairs, len(pairs))
 
 	for _, pair := range pairs {
 		key, value, _ := strings.Cut(pair, "=")
@@ -127,7 +126,7 @@ func DecodeURLValues(input string, separator string) (url.Values, error) {
 // bytes written & over half the allocations per operation.
 //
 //nolint:cyclop
-func EncodeURLValues(input url.Values) string {
+func EncodeURLValues(input map[string][]string) string {
 	// short-circuit in the empty case
 	keyCount := len(input)
 	if keyCount == 0 {
@@ -243,6 +242,31 @@ func Unescape(input string) (string, error) {
 	return string(result), nil
 }
 
+func UnescapeErrorChecker(input string) error {
+	l := len(input)
+	if input[l-1] == '%' {
+		return EscapeError("%")
+	} else if input[l-2] == '%' {
+		return EscapeError(input[l-2:])
+	}
+
+	for pos := 0; pos < len(input); pos++ {
+		switch c := input[pos]; {
+		case c == '%':
+			gByte := checkValidHexCharacter(input[pos+1])
+			lByte := checkValidHexCharacter(input[pos+2])
+
+			if (gByte|lByte)&hexCharErrorBit != 0 {
+				return EscapeError(input[pos : pos+3])
+			}
+
+			pos += 2
+		}
+	}
+
+	return nil
+}
+
 // 10000 = 16 in decimal.
 const hexCharErrorBit byte = 1 << 4
 
@@ -284,4 +308,112 @@ func checkValidHexCharacter(hex byte) byte {
 	}
 
 	return hexCharErrorBit
+}
+
+type KeyValuePairs map[string][]string
+
+func (p *KeyValuePairs) Decode(input string, seperator string) (err error) {
+	*p, err = DecodeURLValues(input, seperator)
+	return
+}
+
+func (p KeyValuePairs) Get(key string) string {
+	if p == nil {
+		return ""
+	}
+
+	vs := p[key]
+	if len(vs) == 0 {
+		return ""
+	}
+
+	return vs[0]
+}
+
+func (v KeyValuePairs) Encode() string {
+	return EncodeURLValues(v)
+}
+
+func (v KeyValuePairs) Len() int {
+	return len(v)
+}
+
+func (v KeyValuePairs) Empty() bool {
+	return len(v) == 0
+}
+
+type KeyValueStore interface {
+	Get(key string) string
+	Encode() string
+	//Decode(input string, seperator string) error
+	Len() int
+	Empty() bool
+}
+
+type EmptyStore struct{}
+
+func (p EmptyStore) Decode(input string, seperator string) (err error) {
+	return err
+}
+
+func (p EmptyStore) Get(key string) string {
+	return ""
+}
+
+func (v EmptyStore) Encode() string {
+	return ""
+}
+
+func (v EmptyStore) Len() int {
+	return 0
+}
+
+func (v EmptyStore) Empty() bool {
+	return true
+}
+
+type LazyStore struct {
+	KeyValuePairs
+	input     string
+	seperator string
+}
+
+func (v *LazyStore) Decode(input string, seperator string) (err error) {
+	v.input = input
+	v.seperator = seperator
+
+	return UnescapeErrorChecker(input)
+}
+
+func (v *LazyStore) Get(key string) string {
+	v.load()
+	return v.KeyValuePairs.Get(key)
+}
+
+func (v *LazyStore) Encode() string {
+	v.load()
+	return v.KeyValuePairs.Encode()
+}
+
+func (v *LazyStore) Len() int {
+	v.load()
+	return v.KeyValuePairs.Len()
+}
+
+func (v *LazyStore) Empty() bool {
+	if v.KeyValuePairs != nil {
+		return v.KeyValuePairs.Empty()
+	}
+
+	return v.input == ""
+}
+
+func (v *LazyStore) load() {
+	if v.KeyValuePairs != nil {
+		return
+	}
+
+	(&v.KeyValuePairs).Decode(v.input, v.seperator)
+	v.input = ""
+	v.seperator = ""
 }

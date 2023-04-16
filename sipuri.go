@@ -33,8 +33,8 @@ type URI struct {
 	User    string
 	Pass    string
 	Host    string
-	Params  url.Values
-	Headers url.Values
+	Params  KeyValueStore
+	Headers KeyValueStore
 
 	hadPass   bool
 	hadParam  bool
@@ -129,20 +129,20 @@ func (sipURI URI) String() string {
 
 	builder.WriteString(escape(sipURI.Host, encodeHost))
 
-	if sipURI.hadParam || len(sipURI.Params) > 0 {
+	if sipURI.hadParam || !sipURI.Params.Empty() {
 		builder.WriteByte(';')
 	}
 
-	if len(sipURI.Params) > 0 {
-		builder.WriteString(EncodeURLValues(sipURI.Params))
+	if !sipURI.Params.Empty() {
+		builder.WriteString(sipURI.Params.Encode())
 	}
 
-	if sipURI.hadHeader || len(sipURI.Headers) > 0 {
+	if sipURI.hadHeader || !sipURI.Headers.Empty() {
 		builder.WriteByte('?')
 	}
 
-	if len(sipURI.Headers) > 0 {
-		builder.WriteString(EncodeURLValues(sipURI.Headers))
+	if !sipURI.Headers.Empty() {
+		builder.WriteString(sipURI.Headers.Encode())
 	}
 
 	return builder.String()
@@ -151,18 +151,31 @@ func (sipURI URI) String() string {
 // Parse parses the given uri.
 func Parse(uri string) (*URI, error) {
 	if strings.HasPrefix(uri, SIPProtocol) {
-		return parse(SIP, uri[len(SIPProtocol):])
+		return parse(SIP, uri[len(SIPProtocol):], false)
 	}
 
 	if strings.HasPrefix(uri, SIPSProtocol) {
-		return parse(SIPS, uri[len(SIPSProtocol):])
+		return parse(SIPS, uri[len(SIPSProtocol):], false)
+	}
+
+	return nil, ErrInvalidScheme
+}
+
+// Parse parses the given uri.
+func ParseLazy(uri string) (*URI, error) {
+	if strings.HasPrefix(uri, SIPProtocol) {
+		return parse(SIP, uri[len(SIPProtocol):], true)
+	}
+
+	if strings.HasPrefix(uri, SIPSProtocol) {
+		return parse(SIPS, uri[len(SIPSProtocol):], true)
 	}
 
 	return nil, ErrInvalidScheme
 }
 
 //nolint:cyclop,funlen
-func parse(proto Protocol, uri string) (*URI, error) {
+func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 	sipURI := URI{Proto: proto}
 
 	// @ in the set of reserved chars of the user portion. Therefore the first
@@ -213,18 +226,36 @@ func parse(proto Protocol, uri string) (*URI, error) {
 
 	sipURI.Host = host
 
-	if params != "" {
-		var err error
-		if sipURI.Params, err = DecodeURLValues(params, ";"); err != nil {
+	if params == "" {
+		sipURI.Params = EmptyStore{}
+	} else if lazy {
+		var temp LazyStore // &LazyStore{}
+		if err := (&temp).Decode(params, ";"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
 		}
+		sipURI.Params = &temp
+	} else {
+		var temp KeyValuePairs // &LazyStore{}
+		if err := (&temp).Decode(params, ";"); err != nil {
+			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
+		}
+		sipURI.Params = temp
 	}
 
-	if headers != "" {
-		var err error
-		if sipURI.Headers, err = DecodeURLValues(headers, "&"); err != nil {
+	if headers == "" {
+		sipURI.Headers = EmptyStore{}
+	} else if lazy {
+		var temp LazyStore
+		if err := (&temp).Decode(headers, "&"); err != nil {
+			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
+		}
+		sipURI.Params = &temp
+	} else {
+		var temp KeyValuePairs // &LazyStore{}
+		if err := (&temp).Decode(headers, "&"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}
 		}
+		sipURI.Headers = temp
 	}
 
 	// Check the host port is not malformed

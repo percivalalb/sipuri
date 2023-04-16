@@ -24,10 +24,10 @@ func TestParse(t *testing.T) {
 			User: "user",
 			Pass: "password",
 			Host: "host:port",
-			Params: map[string][]string{
+			Params: sipuri.KeyValuePairs{
 				"uri-parameters": {""},
 			},
-			Headers: map[string][]string{
+			Headers: sipuri.KeyValuePairs{
 				"headers": {""},
 			},
 		}, "UDP", "template uri"},
@@ -41,7 +41,7 @@ func TestParse(t *testing.T) {
 			User: "alice",
 			Pass: "secretword",
 			Host: "atlanta.com",
-			Params: map[string][]string{
+			Params: sipuri.KeyValuePairs{
 				"transport": {"tcp"},
 			},
 		}, "TCP", "RFC example #1"},
@@ -49,7 +49,7 @@ func TestParse(t *testing.T) {
 			Proto: sipuri.SIPS,
 			User:  "alice",
 			Host:  "atlanta.com",
-			Headers: map[string][]string{
+			Headers: sipuri.KeyValuePairs{
 				"subject":  {"project x"},
 				"priority": {"urgent"},
 			},
@@ -58,7 +58,7 @@ func TestParse(t *testing.T) {
 			User: "+1-212-555-1212",
 			Pass: "1234",
 			Host: "gateway.com",
-			Params: map[string][]string{
+			Params: sipuri.KeyValuePairs{
 				"user": {"phone"},
 			},
 		}, "UDP", "RFC example #3"},
@@ -75,10 +75,10 @@ func TestParse(t *testing.T) {
 			User: "",
 			Pass: "",
 			Host: "atlanta.com",
-			Params: map[string][]string{
+			Params: sipuri.KeyValuePairs{
 				"method": {"REGISTER"},
 			},
-			Headers: map[string][]string{
+			Headers: sipuri.KeyValuePairs{
 				"to": {"alice@atlanta.com"},
 			},
 		}, "UDP", "RFC example #6"},
@@ -103,14 +103,14 @@ func TestParse(t *testing.T) {
 		{"sip:bob@nokia.com;transport=tcp", sipuri.URI{
 			User: "bob",
 			Host: "nokia.com",
-			Params: map[string][]string{
+			Params: sipuri.KeyValuePairs{
 				"transport": {"tcp"},
 			},
 		}, "TCP", "O'Reilly example #2"},
 		{"sip:+1-212-555-1234@gw.com;user=phone", sipuri.URI{
 			User: "+1-212-555-1234",
 			Host: "gw.com",
-			Params: map[string][]string{
+			Params: sipuri.KeyValuePairs{
 				"user": {"phone"},
 			},
 		}, "UDP", "O'Reilly example #3"},
@@ -121,7 +121,7 @@ func TestParse(t *testing.T) {
 		{"sip:bob.smith@registrar.com;method=REGISTER", sipuri.URI{
 			User: "bob.smith",
 			Host: "registrar.com",
-			Params: map[string][]string{
+			Params: sipuri.KeyValuePairs{
 				"method": {"REGISTER"},
 			},
 		}, "UDP", "O'Reilly example #5"},
@@ -144,6 +144,15 @@ func TestParse(t *testing.T) {
 		equalF(t, test.sipURI.User, sipURI.User, "user mismatch in %s", test.msg)
 		equalF(t, test.sipURI.Pass, sipURI.Pass, "password mismatch in %s", test.msg)
 		equalF(t, test.sipURI.Host, sipURI.Host, "host mismatch in %s", test.msg)
+
+		// TODO: stop being null
+		if test.sipURI.Params == nil {
+			test.sipURI.Params = sipuri.EmptyStore{}
+		}
+
+		if test.sipURI.Headers == nil {
+			test.sipURI.Headers = sipuri.EmptyStore{}
+		}
 
 		equalF(t, test.sipURI.Params.Encode(), sipURI.Params.Encode(), "param mismatch in %s", test.msg)
 		equalF(t, test.sipURI.Headers.Encode(), sipURI.Headers.Encode(), "header mismatch in %s", test.msg)
