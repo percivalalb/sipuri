@@ -1,4 +1,4 @@
-// Package to parse SIP or SIPS URI into the constitution components.
+// Package sipuri parses SIP or SIPS URI into their constitution components.
 //
 // A general SIP uri looks like:
 //
@@ -12,6 +12,7 @@ import (
 	"strings"
 )
 
+// The two sip protocols.
 const (
 	SIPProtocol  = "sip:"
 	SIPSProtocol = "sips:"
@@ -135,7 +136,7 @@ func (sipURI URI) Port() string {
 	return ""
 }
 
-// Strings rebuilds the string representation of the URI respecting the quirks of the input.
+// String rebuilds the string representation of the URI respecting the quirks of the input.
 //
 //nolint:cyclop
 func (sipURI URI) String() string {
@@ -184,30 +185,30 @@ func (sipURI URI) String() string {
 }
 
 // Secure returns if the URI has been upgrade to the SIPS scheme.
-func (u URI) Secure() Protocol {
-	return u.proto == SIPS
+func (sipURI URI) Secure() Protocol {
+	return sipURI.proto == SIPS
 }
 
 // Proto returns what scheme the SIP URI is.
-func (u URI) Proto() Protocol {
-	return u.proto
+func (sipURI URI) Proto() Protocol {
+	return sipURI.proto
 }
 
 // User returns the decoded user portion of the URI.
-func (u URI) User() string {
-	return u.user
+func (sipURI URI) User() string {
+	return sipURI.user
 }
 
 // Password returns the decoded password portion of the URI.
-func (u URI) Password() string {
-	return u.pass
+func (sipURI URI) Password() string {
+	return sipURI.pass
 }
 
 // Host returns the decoded host portion of the URI.
 //
 // You may want to use SplitHostPort.
-func (u URI) Host() string {
-	return u.host
+func (sipURI URI) Host() string {
+	return sipURI.host
 }
 
 // SplitHostPort splits the port from the host portion into.
@@ -223,17 +224,19 @@ func (sipURI URI) SplitHostPort() (string, string, error) {
 }
 
 // Params returns the decoded params portion of the URI.
-func (u URI) Params() KeyValueStore {
-	if u.params == nil {
+func (sipURI URI) Params() KeyValueStore {
+	if sipURI.params == nil {
 		return EmptyStore{}
 	}
-	return u.params
+
+	return sipURI.params
 }
 
 // Headers returns the decoded headers portion of the URI.
-func (u URI) Headers() KeyValueStore {
-	if u.headers == nil {
+func (sipURI URI) Headers() KeyValueStore {
+	if sipURI.headers == nil {
 		return EmptyStore{}
 	}
-	return u.headers
+
+	return sipURI.headers
 }

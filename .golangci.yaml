@@ -13,8 +13,16 @@ linters-settings:
     max-distance: 17 # default of 5 makes the linter annoying to use.
 
 issues:
+  exclude-use-default: false
   exclude-rules:
     # exclude some linters on test files.
     - path: _test\.go
       linters:
         - funlen # some test functions can be long.
+    - linters:
+        - golint
+        - revive
+      text: returns unexported type.*sipuri\.uriOption
+    - path: sipuri\.go
+      linters:
+        - ireturn

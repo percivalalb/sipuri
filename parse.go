@@ -15,7 +15,7 @@ func Parse(uri string) (*URI, error) {
 	return nil, ErrInvalidScheme
 }
 
-// Parse parses the given uri.
+// ParseLazy parses the given uri, lazily loading the uri parameters & headers.
 func ParseLazy(uri string) (*URI, error) {
 	if strings.HasPrefix(uri, SIPProtocol) {
 		return parse(SIP, uri[len(SIPProtocol):], true)
@@ -84,17 +84,18 @@ func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 		return nil, MalformedURIError{Cause: MalformedHost, Err: err}
 	}
 
-	if params == "" {
+	switch {
+	case params == "":
 		sipURI.params = EmptyStore{}
-	} else if lazy {
-		var temp LazyStore // &LazyStore{}
+	case lazy:
+		var temp LazyStore
 		if err := (&temp).Decode(params, ";"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
 		}
 
 		sipURI.params = &temp
-	} else {
-		var temp KeyValuePairs // &LazyStore{}
+	default:
+		var temp KeyValuePairs
 		if err := (&temp).Decode(params, ";"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
 		}
@@ -102,16 +103,17 @@ func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 		sipURI.params = temp
 	}
 
-	if headers == "" {
+	switch {
+	case headers == "":
 		sipURI.headers = EmptyStore{}
-	} else if lazy {
+	case lazy:
 		var temp LazyStore
 		if err := (&temp).Decode(headers, "&"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}
 		}
 
 		sipURI.headers = &temp
-	} else {
+	default:
 		var temp KeyValuePairs
 		if err := (&temp).Decode(headers, "&"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}

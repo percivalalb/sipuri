@@ -9,6 +9,7 @@ import (
 	"github.com/percivalalb/sipuri"
 )
 
+//nolint:gochecknoglobals
 var parseFuncs = [2](func(string) (*sipuri.URI, error)){
 	sipuri.Parse,
 	sipuri.ParseLazy,
@@ -238,7 +239,7 @@ func TestParseError(t *testing.T) {
 				t.Fatalf(`expected error %q but got %q in %s`, test.err, err, test.msg)
 			}
 
-			equalF(t, (*sipuri.URI)(nil), nul, "nil recieved %s", test.msg)
+			equalF(t, (*sipuri.URI)(nil), nul, "nil received %s", test.msg)
 		}
 	}
 }

@@ -255,8 +255,7 @@ func UnescapeErrorChecker(input string) error {
 	}
 
 	for pos := 0; pos < l; pos++ {
-		switch c := input[pos]; {
-		case c == '%':
+		if input[pos] == '%' {
 			gByte := checkValidHexCharacter(input[pos+1])
 			lByte := checkValidHexCharacter(input[pos+2])
 
@@ -314,19 +313,39 @@ func checkValidHexCharacter(hex byte) byte {
 	return hexCharErrorBit
 }
 
-type KeyValuePairs map[string][]string
-
-func (p *KeyValuePairs) Decode(input string, seperator string) (err error) {
-	*p, err = DecodeURLValues(input, seperator)
-	return
+// KeyValueStore provides access to a multi-valued map.
+type KeyValueStore interface {
+	// Get returns the first value for the given key. Empty string otherwise.
+	Get(key string) string
+	// Encode stringifies the multi-valued map, url encoding keys and values
+	// joining with an ampersand.
+	Encode() string
+	// Len returns the number of distinct keys.
+	Len() int
+	// Empty returns if the store contains no keys.
+	Empty() bool
 }
 
-func (p KeyValuePairs) Get(key string) string {
-	if p == nil {
+// KeyValuePairs stores key to values similar to that of [url.Values]
+// and implements [KeyValueStore].
+type KeyValuePairs map[string][]string
+
+// Decode populates the Store with the given data, returing any encoding errors
+// encountered.
+func (m *KeyValuePairs) Decode(input, separator string) error {
+	var err error
+	*m, err = DecodeURLValues(input, separator)
+
+	return err
+}
+
+// Get returns the first value for the given key. Empty string otherwise.
+func (m KeyValuePairs) Get(key string) string {
+	if m == nil {
 		return ""
 	}
 
-	vs := p[key]
+	vs := m[key]
 	if len(vs) == 0 {
 		return ""
 	}
@@ -334,90 +353,108 @@ func (p KeyValuePairs) Get(key string) string {
 	return vs[0]
 }
 
-func (v KeyValuePairs) Encode() string {
-	return EncodeURLValues(v)
+// Encode stringifies the multi-valued map, url encoding keys and values
+// joining with an ampersand.
+func (m KeyValuePairs) Encode() string {
+	return EncodeURLValues(m)
 }
 
-func (v KeyValuePairs) Len() int {
-	return len(v)
+// Len returns the number of distinct keys.
+func (m KeyValuePairs) Len() int {
+	return len(m)
 }
 
-func (v KeyValuePairs) Empty() bool {
-	return len(v) == 0
+// Empty returns if the store contains no keys.
+func (m KeyValuePairs) Empty() bool {
+	return len(m) == 0
 }
 
-type KeyValueStore interface {
-	Get(key string) string
-	Encode() string
-	//Decode(input string, seperator string) error
-	Len() int
-	Empty() bool
-}
-
+// EmptyStore represents an always empty multi-valued map.
 type EmptyStore struct{}
 
-func (p EmptyStore) Decode(input string, seperator string) (err error) {
-	return err
+// Decode populates the Store with the given data, returing any encoding errors
+// encountered.
+func (EmptyStore) Decode(_, _ string) error {
+	return nil
 }
 
-func (p EmptyStore) Get(key string) string {
+// Get returns the first value for the given key. Empty string otherwise.
+func (EmptyStore) Get(_ string) string {
 	return ""
 }
 
-func (v EmptyStore) Encode() string {
+// Encode stringifies the multi-valued map, url encoding keys and values
+// joining with an ampersand.
+func (EmptyStore) Encode() string {
 	return ""
 }
 
-func (v EmptyStore) Len() int {
+// Len returns the number of distinct keys.
+func (EmptyStore) Len() int {
 	return 0
 }
 
-func (v EmptyStore) Empty() bool {
+// Empty returns if the store contains no keys.
+func (EmptyStore) Empty() bool {
 	return true
 }
 
+// LazyStore lazily loads a [KeyValuePairs] struct when inspected.
 type LazyStore struct {
 	KeyValuePairs
 	input     string
-	seperator string
+	separator string
 }
 
-func (v *LazyStore) Decode(input string, seperator string) (err error) {
-	v.input = input
-	v.seperator = seperator
+// Decode populates the Store with the given data. Always scans the input for encoding errors.
+func (s *LazyStore) Decode(input, separator string) error {
+	s.input = input
+	s.separator = separator
 
 	return UnescapeErrorChecker(input)
 }
 
-func (v *LazyStore) Get(key string) string {
-	v.load()
-	return v.KeyValuePairs.Get(key)
+// Get returns the first value for the given key. Empty string otherwise.
+func (s *LazyStore) Get(key string) string {
+	s.load()
+
+	return s.KeyValuePairs.Get(key)
 }
 
-func (v *LazyStore) Encode() string {
-	v.load()
-	return v.KeyValuePairs.Encode()
+// Encode stringifies the multi-valued map, url encoding keys and values
+// joining with an ampersand.
+func (s *LazyStore) Encode() string {
+	s.load()
+
+	return s.KeyValuePairs.Encode()
 }
 
-func (v *LazyStore) Len() int {
-	v.load()
-	return v.KeyValuePairs.Len()
+// Len returns the number of distinct keys.
+func (s *LazyStore) Len() int {
+	s.load()
+
+	return s.KeyValuePairs.Len()
 }
 
-func (v *LazyStore) Empty() bool {
-	if v.KeyValuePairs != nil {
-		return v.KeyValuePairs.Empty()
+// Empty returns if the store contains no keys.
+func (s *LazyStore) Empty() bool {
+	if s.KeyValuePairs != nil {
+		return s.KeyValuePairs.Empty()
 	}
 
-	return v.input == ""
+	return s.input == ""
 }
 
-func (v *LazyStore) load() {
-	if v.KeyValuePairs != nil {
+func (s *LazyStore) load() {
+	if s.KeyValuePairs != nil {
 		return
 	}
 
-	(&v.KeyValuePairs).Decode(v.input, v.seperator)
-	v.input = ""
-	v.seperator = ""
+	// Any possible errors have already been checked in the Decode
+	// call to [UnescapeErrorChecker].
+	//nolint:errcheck,gosec
+	(&s.KeyValuePairs).Decode(s.input, s.separator)
+
+	s.input = ""
+	s.separator = ""
 }
