@@ -22,35 +22,35 @@ func TestURLDecodeURLValues(t *testing.T) {
 
 	type test struct {
 		input  string
-		expect url.Values
+		expect sipuri.KeyValuePairs
 		msg    string
 	}
 
 	tests := []test{
 		{
 			"transport=TCP",
-			url.Values{
+			sipuri.KeyValuePairs{
 				"transport": {"TCP"},
 			},
 			"single key-value pair",
 		},
 		{
 			"transport=",
-			url.Values{
+			sipuri.KeyValuePairs{
 				"transport": {""},
 			},
 			"singleton",
 		},
 		{
 			"transport",
-			url.Values{
+			sipuri.KeyValuePairs{
 				"transport": {""},
 			},
 			"singleton",
 		},
 		{
 			"transport=TCP;user=percivalalb;group=polarbear",
-			url.Values{
+			sipuri.KeyValuePairs{
 				"transport": {"TCP"},
 				"user":      {"percivalalb"},
 				"group":     {"polarbear"},
@@ -61,6 +61,9 @@ func TestURLDecodeURLValues(t *testing.T) {
 
 	for _, test := range tests {
 		result, err := sipuri.DecodeURLValues(test.input, ";")
+
+		equalF(t, err, sipuri.UnescapeErrorChecker(test.input), "checker matches")
+
 		if err != nil {
 			t.Fatalf("err %v", err)
 		}
@@ -87,17 +90,23 @@ func TestUnescapeError(t *testing.T) {
 		t.Fatalf("err %v", err)
 	}
 
+	equalF(t, err, sipuri.UnescapeErrorChecker("bark%2y"), "checker matches")
+
 	_, err = sipuri.Unescape("bark%2")
 
 	if !errors.Is(err, sipuri.EscapeError("%2")) {
 		t.Fatalf("err %v", err)
 	}
 
+	equalF(t, err, sipuri.UnescapeErrorChecker("bark%2"), "checker matches")
+
 	_, err = sipuri.Unescape("bark%")
 
 	if !errors.Is(err, sipuri.EscapeError("%")) {
 		t.Fatalf("err %v", err)
 	}
+
+	equalF(t, err, sipuri.UnescapeErrorChecker("bark%"), "checker matches")
 }
 
 // func FuzzReverse(f *testing.F) {
