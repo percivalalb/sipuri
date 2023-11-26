@@ -5,9 +5,14 @@ orbs:
 
 jobs:
   test:
+    parameters:
+      version:
+        description: "go version tag"
+        default: "latest"
+        type: string
     working_directory: ~/repo
     docker:
-      - image: cimg/go:1.20.3
+      - image: cimg/go:<<parameters.version>>
     resource_class: small # 1 vCPU, 2GB RAM 
     steps:
       - checkout
@@ -34,6 +39,13 @@ jobs:
 workflows:
   test:
     jobs:
-      - test
       - golangci-lint/lint:
-          tag: v1.55.2
+          tag: 'v1.55.2'
+      - test:
+          matrix:
+            parameters:
+              version:
+                - '1.21'
+                - '1.20'
+                - '1.19'
+                - '1.18'
