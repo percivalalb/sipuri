@@ -36,4 +36,4 @@ workflows:
     jobs:
       - test
       - golangci-lint/lint:
-          tag: v1.52.2
+          tag: v1.55.2
