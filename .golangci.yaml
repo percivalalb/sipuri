@@ -9,6 +9,16 @@ linters:
     - maligned         # deprecated and replaced by official fieldalignment.
 
 linters-settings:
+  depguard:
+    rules:
+      # Only allow imports from the stdlib & this module
+      all:
+        list-mode: strict
+        files:
+          - $all
+        allow:
+          - $gostd
+          - github.com/percivalalb/sipuri
   varnamelen:
     max-distance: 17 # default of 5 makes the linter annoying to use.
 

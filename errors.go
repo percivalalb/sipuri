@@ -97,7 +97,7 @@ func (e EscapeError) Error() string {
 
 // Is makes EscapeError useable with errors.Is.
 func (e EscapeError) Is(input error) bool {
-	_, ok := input.(EscapeError) //nolint:errorlint
+	_, ok := input.(EscapeError)
 
 	return ok
 }
