@@ -5,7 +5,7 @@
 
 This module is a pure [Golang](https://go.dev/) implementation to parse URIs with the scheme `sip:` & `sips:`. It tries to adhere to the spec in [RFC-3261 19.1.1](https://www.rfc-editor.org/rfc/rfc3261#section-19.1.1). It is meant to be small and efficent and require no libraries outside the [standard lib](https://pkg.go.dev/std).
 
-Requires go 1.16+ (tested on 1.20)
+Requires go 1.18+
 
 ```console
 go get github.com/percivalalb/sipuri
