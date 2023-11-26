@@ -13,7 +13,7 @@ var ErrInvalidScheme = errors.New("sip: scheme invalid")
 type MalformCause uint8
 
 // The possible reasons a URI could be malformed. The cause which relates to the
-// earlist part of the URI is returned.
+// earliest part of the URI is returned.
 const (
 	Unspecified MalformCause = iota
 	MissingUser
@@ -69,10 +69,10 @@ func (err MalformedURIError) Error() string {
 	return builder.String()
 }
 
-// Is returns if the given error is also a MalformedURIError struct of the same cause.
+// Is returns if the given error is also a [MalformedURIError] struct of the same cause.
 //
 // If the input does not have a cause specified then it matches any
-// MalformedURIError struct.
+// [MalformedURIError] struct.
 func (err MalformedURIError) Is(input error) bool {
 	var inputMal MalformedURIError
 	if errors.As(input, &inputMal) {
@@ -95,7 +95,7 @@ func (e EscapeError) Error() string {
 	return "sip: invalid URL escape " + strconv.Quote(string(e))
 }
 
-// Is makes EscapeError useable with errors.Is.
+// Is allows [EscapeError] to be compared by [errors.Is].
 func (e EscapeError) Is(input error) bool {
 	_, ok := input.(EscapeError)
 

@@ -121,7 +121,7 @@ func DecodeURLValues(input string, separator string) (KeyValuePairs, error) {
 // EncodeURLValues encodes all non-alpha numeric byte values;
 // notibly it encodes spaces as "%20" rather than a '+'.
 //
-// Based on url.Values.Encode() but encodes spaces differently.
+// Based on [url.Values.Encode()] but encodes spaces differently.
 // It is also slightly more efficient at 10% faster, with around 35% less
 // bytes written & over half the allocations per operation.
 //
