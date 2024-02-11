@@ -1,6 +1,6 @@
 # SIP URI Parser
 
-[![CircleCI](https://circleci.com/gh/percivalalb/sipuri.svg?style=svg)](https://circleci.com/gh/percivalalb/sipuri)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/percivalalb/sipuri/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/percivalalb/sipuri/tree/main)
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/percivalalb/sipuri)](https://pkg.go.dev/github.com/percivalalb/sipuri)
 
 This module is a pure [Golang](https://go.dev/) implementation to parse URIs with the scheme `sip:` & `sips:`. It tries to adhere to the spec in [RFC-3261 19.1.1](https://www.rfc-editor.org/rfc/rfc3261#section-19.1.1). It is meant to be small and efficent and require no libraries outside the [standard lib](https://pkg.go.dev/std).
