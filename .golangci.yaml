@@ -1,38 +1,51 @@
-run:
-  timeout: 10m
+version: '2'
 
 linters:
-  enable-all: true
+  default: all
   disable:
-    - exhaustruct      # is only intended for use in special cases.
-    - exhaustivestruct # deprecated and replaced by the above.
-    - maligned         # deprecated and replaced by official fieldalignment.
-
-linters-settings:
-  depguard:
-    rules:
+    - exhaustruct # is only intended for use in special cases.
+    - recvcheck
+  settings:
+    depguard:
       # Only allow imports from the stdlib & this module
-      all:
-        list-mode: strict
-        files:
-          - $all
-        allow:
-          - $gostd
-          - github.com/percivalalb/sipuri
-  varnamelen:
-    max-distance: 17 # default of 5 makes the linter annoying to use.
+      rules:
+        all:
+          list-mode: strict
+          files:
+            - $all
+          allow:
+            - $gostd
+            - github.com/percivalalb/sipuri
+    varnamelen:
+      max-distance: 17 # default of 5 makes the linter annoying to use.
+  exclusions:
+    generated: lax
+    rules:
+      # exclude some linters on test files.
+      - linters:
+          - funlen # some test functions can be long.
+        path: _test\.go
+      - linters:
+          - golint
+          - revive
+        text: returns unexported type.*sipuri\.uriOption
+      - linters:
+          - ireturn
+        path: sipuri\.go
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
 
-issues:
-  exclude-use-default: false
-  exclude-rules:
-    # exclude some linters on test files.
-    - path: _test\.go
-      linters:
-        - funlen # some test functions can be long.
-    - linters:
-        - golint
-        - revive
-      text: returns unexported type.*sipuri\.uriOption
-    - path: sipuri\.go
-      linters:
-        - ireturn
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
