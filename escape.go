@@ -81,7 +81,7 @@ func escape(input string, mode encoding) string {
 		return input
 	}
 
-	required := len(input) + 2*hexCount //nolint:gomnd
+	required := len(input) + 2*hexCount //nolint:mnd
 	result := make([]byte, required)
 
 	escapeInto(input, 0, result)
@@ -231,7 +231,7 @@ func Unescape(input string) (string, error) {
 		return input, nil
 	}
 
-	required := len(input) - 2*hexCount //nolint:gomnd
+	required := len(input) - 2*hexCount //nolint:mnd
 	result := make([]byte, required)
 
 	_, err := unescapeInto(input, 0, result)
@@ -275,8 +275,8 @@ const hexCharErrorBit byte = 1 << 4
 
 func unescapeInto(input string, offset int, target []byte) (int, error) {
 	for pos := 0; pos < len(input); pos++ {
-		switch c := input[pos]; {
-		case c == '%':
+		switch c := input[pos]; c {
+		case '%':
 			gByte := checkValidHexCharacter(input[pos+1])
 			lByte := checkValidHexCharacter(input[pos+2])
 
@@ -284,7 +284,7 @@ func unescapeInto(input string, offset int, target []byte) (int, error) {
 				return 0, EscapeError(input[pos : pos+3])
 			}
 
-			target[offset] = gByte<<4 + lByte //nolint:gomnd
+			target[offset] = gByte<<4 + lByte //nolint:mnd
 			offset++
 
 			pos += 2
