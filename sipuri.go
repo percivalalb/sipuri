@@ -10,6 +10,8 @@ package sipuri
 import (
 	"net"
 	"strings"
+
+	"github.com/percivalalb/sipuri/internal"
 )
 
 // The two sip protocols.
@@ -34,59 +36,12 @@ type URI struct {
 	user    string
 	pass    string
 	host    string
-	params  KeyValueStore
-	headers KeyValueStore
+	params  internal.KeyValueStore
+	headers internal.KeyValueStore
 
 	hadPass   bool
 	hadParam  bool
 	hadHeader bool
-}
-
-type uriOption func(u *URI)
-
-// WithParams allows URI params to be set.
-func WithParams(params KeyValueStore) uriOption {
-	return func(u *URI) {
-		u.params = params
-	}
-}
-
-// WithHeaders allows URI headers to be set.
-func WithHeaders(headers KeyValueStore) uriOption {
-	return func(u *URI) {
-		u.headers = headers
-	}
-}
-
-// WithPassword allows the password portion of the user-info to be set.
-//
-// Use of a password is not advised and is inherently insecure. Use other
-// methods to ensure communication.
-func WithPassword(pass string) uriOption {
-	return func(u *URI) {
-		u.pass = pass
-	}
-}
-
-// Secure upgrades the URI to the SIPS protocol.
-func Secure() uriOption {
-	return func(u *URI) {
-		u.proto = SIPS
-	}
-}
-
-// New constructs a SIP URI with the given options.
-func New(user, host string, opts ...uriOption) URI {
-	u := URI{
-		user: user,
-		host: host,
-	}
-
-	for _, opt := range opts {
-		opt(&u)
-	}
-
-	return u
 }
 
 // Transport returns the Transport protocols that would be used to make a
@@ -150,20 +105,20 @@ func (sipURI URI) String() string {
 	}
 
 	if sipURI.user != "" {
-		builder.WriteString(escape(sipURI.user, encodeUserPassword))
+		builder.WriteString(internal.Escape(sipURI.user, internal.EncodeUserPassword))
 
 		if sipURI.hadPass || sipURI.pass != "" {
 			builder.WriteRune(':')
 		}
 
 		if sipURI.pass != "" {
-			builder.WriteString(escape(sipURI.pass, encodeUserPassword))
+			builder.WriteString(internal.Escape(sipURI.pass, internal.EncodeUserPassword))
 		}
 
 		builder.WriteByte('@') // only present when user is non-empty
 	}
 
-	builder.WriteString(escape(sipURI.host, encodeHost))
+	builder.WriteString(internal.Escape(sipURI.host, internal.EncodeHost))
 
 	if sipURI.hadParam || !sipURI.Params().Empty() {
 		builder.WriteByte(';')
@@ -224,18 +179,18 @@ func (sipURI URI) SplitHostPort() (string, string, error) {
 }
 
 // Params returns the decoded params portion of the URI.
-func (sipURI URI) Params() KeyValueStore {
+func (sipURI URI) Params() internal.KeyValueStore {
 	if sipURI.params == nil {
-		return EmptyStore{}
+		return internal.EmptyStore{}
 	}
 
 	return sipURI.params
 }
 
 // Headers returns the decoded headers portion of the URI.
-func (sipURI URI) Headers() KeyValueStore {
+func (sipURI URI) Headers() internal.KeyValueStore {
 	if sipURI.headers == nil {
-		return EmptyStore{}
+		return internal.EmptyStore{}
 	}
 
 	return sipURI.headers

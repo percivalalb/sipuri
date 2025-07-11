@@ -1,9 +1,8 @@
-package sipuri
+package internal
 
 import (
 	"sort"
 	"strings"
-	"sync"
 )
 
 // This file is an alternative to the stdlib module url with some
@@ -15,9 +14,9 @@ import (
 type encoding int
 
 const (
-	encodeHost encoding = 1 + iota
-	encodeUserPassword
-	encodeQueryComponent
+	EncodeHost encoding = 1 + iota
+	EncodeUserPassword
+	EncodeQueryComponent
 )
 
 // shouldEscape returns if the given character should be escaped in the
@@ -33,7 +32,7 @@ func (mode encoding) shouldEscape(char byte) bool {
 		return false
 	}
 
-	if mode == encodeHost {
+	if mode == EncodeHost {
 		// §3.2.2 Host allows:
 		switch char {
 		case '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '=', ':', '[', ']', '<', '>', '"':
@@ -49,13 +48,13 @@ func (mode encoding) shouldEscape(char byte) bool {
 		// Different sections of the URI allow a few of
 		// the reserved characters to appear unescaped.
 		switch mode { //nolint:exhaustive
-		case encodeUserPassword: // §3.2.1
+		case EncodeUserPassword: // §3.2.1
 			// The RFC allows ';', ':', '&', '=', '+', '$', and ',' in
 			// userinfo, so we must escape only '@', '/', and '?'.
 			// The parsing of userinfo treats ':' as special so we must escape
 			// that too.
 			return char == '@' || char == '/' || char == '?' || char == ':'
-		case encodeQueryComponent: // §3.4
+		case EncodeQueryComponent: // §3.4
 			// The RFC reserves (so we must escape) everything.
 			return true
 		}
@@ -68,7 +67,7 @@ func (mode encoding) shouldEscape(char byte) bool {
 // escape encodes characters based on the context of the string
 //
 // Based on url.escape but tweaked and optimised.
-func escape(input string, mode encoding) string {
+func Escape(input string, mode encoding) string {
 	var hexCount int
 
 	for i := 0; i < len(input); i++ {
@@ -147,7 +146,7 @@ func EncodeURLValues(input map[string][]string) string {
 		keys = append(keys, key)
 
 		for i := 0; i < len(key); i++ {
-			if encodeQueryComponent.shouldEscape(key[i]) {
+			if EncodeQueryComponent.shouldEscape(key[i]) {
 				hexCount += vsCount
 			}
 		}
@@ -157,7 +156,7 @@ func EncodeURLValues(input map[string][]string) string {
 
 		for _, val := range vals {
 			for i := 0; i < len(val); i++ {
-				if encodeQueryComponent.shouldEscape(val[i]) {
+				if EncodeQueryComponent.shouldEscape(val[i]) {
 					hexCount++
 				}
 			}
@@ -203,7 +202,7 @@ const upperhex = "0123456789ABCDEF"
 func escapeInto(input string, offset int, target []byte) int {
 	for pos := 0; pos < len(input); pos++ {
 		switch c := input[pos]; {
-		case encodeQueryComponent.shouldEscape(c):
+		case EncodeQueryComponent.shouldEscape(c):
 			target[offset] = '%'
 			target[offset+1] = upperhex[c>>4]
 			target[offset+2] = upperhex[c&15]
@@ -255,7 +254,7 @@ func Unescape(input string) (string, error) {
 
 // UnescapeErrorChecker scans the input checking for malformed encoded entities.
 //
-// It is a stripped down version of Unescape without actually extracting the parts
+// It is a stripped down version of [Unescape] without actually extracting the parts
 // or decoding the string it returns an error if and only if the aforementioned does.
 func UnescapeErrorChecker(input string) error {
 	l := len(input)
@@ -326,212 +325,4 @@ func checkValidHexCharacter(hex byte) byte {
 	}
 
 	return hexCharErrorBit
-}
-
-// KeyValueStore provides access to a multi-valued map.
-type KeyValueStore interface {
-	// Get returns the first value for the given key. Empty string otherwise.
-	Get(key string) string
-	// GetAll returns all the values for the given key. Nil slice otherwise.
-	GetAll(key string) []string
-	// Keys returns all the keys in no particular order. Nil slice if there are none.
-	Keys() []string
-	// Encode stringifies the multi-valued map, url encoding keys and values
-	// joining with an ampersand.
-	Encode() string
-	// Len returns the number of distinct keys.
-	Len() int
-	// Empty returns if the store contains no keys.
-	Empty() bool
-}
-
-// KeyValuePairs stores key to values similar to that of [url.Values]
-// and implements [KeyValueStore].
-type KeyValuePairs map[string][]string
-
-// Decode populates the Store with the given data, returing any encoding errors
-// encountered.
-func (m *KeyValuePairs) Decode(input, separator string) error {
-	var err error
-
-	*m, err = DecodeURLValues(input, separator)
-
-	return err
-}
-
-// Get returns the first value for the given key. Empty string otherwise.
-func (m KeyValuePairs) Get(key string) string {
-	if m == nil {
-		return ""
-	}
-
-	vs := m[key]
-	if len(vs) == 0 {
-		return ""
-	}
-
-	return vs[0]
-}
-
-// GetAll returns all the values for the given key. Nil slice otherwise.
-func (m KeyValuePairs) GetAll(key string) []string {
-	if m == nil {
-		return nil
-	}
-
-	vs := m[key]
-	if len(vs) == 0 {
-		return nil
-	}
-
-	c := make([]string, len(vs))
-	copy(c, vs)
-
-	return c
-}
-
-// Keys returns all the keys in no particular order. Nil slice if there are none.
-func (m KeyValuePairs) Keys() []string {
-	l := len(m)
-	if l == 0 {
-		return nil
-	}
-
-	keys := make([]string, 0, l)
-
-	for k := range m {
-		keys = append(keys, k)
-	}
-
-	return keys
-}
-
-// Encode stringifies the multi-valued map, url encoding keys and values
-// joining with an ampersand.
-func (m KeyValuePairs) Encode() string {
-	return EncodeURLValues(m)
-}
-
-// Len returns the number of distinct keys.
-func (m KeyValuePairs) Len() int {
-	return len(m)
-}
-
-// Empty returns if the store contains no keys.
-func (m KeyValuePairs) Empty() bool {
-	return len(m) == 0
-}
-
-// EmptyStore represents an always empty multi-valued map.
-type EmptyStore struct{}
-
-// Decode populates the Store with the given data, returing any encoding errors
-// encountered.
-func (EmptyStore) Decode(_, _ string) error {
-	return nil
-}
-
-// Get returns the first value for the given key. Empty string otherwise.
-func (EmptyStore) Get(_ string) string {
-	return ""
-}
-
-// GetAll returns all the values for the given key. Nil slice otherwise.
-func (EmptyStore) GetAll(_ string) []string {
-	return nil
-}
-
-// Keys returns all the keys in no particular order. Nil slice if there are none.
-func (EmptyStore) Keys() []string {
-	return nil
-}
-
-// Encode stringifies the multi-valued map, url encoding keys and values
-// joining with an ampersand.
-func (EmptyStore) Encode() string {
-	return ""
-}
-
-// Len returns the number of distinct keys.
-func (EmptyStore) Len() int {
-	return 0
-}
-
-// Empty returns if the store contains no keys.
-func (EmptyStore) Empty() bool {
-	return true
-}
-
-// LazyStore lazily loads a [KeyValuePairs] struct when inspected.
-type LazyStore struct {
-	KeyValuePairs
-
-	once      sync.Once // protects the above
-	input     string
-	separator string
-}
-
-// Decode populates the Store with the given data. Always scans the input for encoding errors.
-func (s *LazyStore) Decode(input, separator string) error {
-	s.input = input
-	s.separator = separator
-
-	return UnescapeErrorChecker(input)
-}
-
-// Get returns the first value for the given key. Empty string otherwise.
-func (s *LazyStore) Get(key string) string {
-	s.load()
-
-	return s.KeyValuePairs.Get(key)
-}
-
-// GetAll returns all the values for the given key. Nil slice otherwise.
-func (s *LazyStore) GetAll(key string) []string {
-	s.load()
-
-	return s.KeyValuePairs.GetAll(key)
-}
-
-// Keys returns all the keys in no particular order. Nil slice if there are none.
-func (s *LazyStore) Keys() []string {
-	s.load()
-
-	return s.KeyValuePairs.Keys()
-}
-
-// Encode stringifies the multi-valued map, url encoding keys and values
-// joining with an ampersand.
-func (s *LazyStore) Encode() string {
-	s.load()
-
-	return s.KeyValuePairs.Encode()
-}
-
-// Len returns the number of distinct keys.
-func (s *LazyStore) Len() int {
-	s.load()
-
-	return s.KeyValuePairs.Len()
-}
-
-// Empty returns if the store contains no keys.
-func (s *LazyStore) Empty() bool {
-	if s.KeyValuePairs != nil {
-		return s.KeyValuePairs.Empty()
-	}
-
-	return s.input == ""
-}
-
-func (s *LazyStore) load() {
-	s.once.Do(func() {
-		// Any possible errors have already been checked in the Decode
-		// call to [UnescapeErrorChecker].
-		//nolint:errcheck,gosec
-		(&s.KeyValuePairs).Decode(s.input, s.separator)
-
-		s.input = ""
-		s.separator = ""
-	})
 }

@@ -21,17 +21,17 @@ func TestNew(t *testing.T) {
 			"user",
 			"host:port",
 			sipuri.WithPassword("password"),
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"uri-parameters": {""},
 			}),
-			sipuri.WithHeaders(sipuri.KeyValuePairs{
+			sipuri.WithHeaders(sipuri.Headers{
 				"headers": {""},
 			}),
 		), "template uri"},
 		{"sips:user@host", sipuri.New("user", "host", sipuri.Secure()), "secure upgrade"},
 		{"sip:user@host;key1=value1&key2=value2&key2=value3", sipuri.New(
 			"user", "host",
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"key1": {"value1"},
 				"key2": {"value2", "value3"},
 				"key3": nil,
@@ -47,10 +47,10 @@ func TestNew(t *testing.T) {
 		"user",
 		"host:port",
 		sipuri.WithPassword("password"),
-		sipuri.WithParams(sipuri.KeyValuePairs{
+		sipuri.WithParams(sipuri.Params{
 			"uri-parameters": {""},
 		}),
-		sipuri.WithHeaders(sipuri.KeyValuePairs{
+		sipuri.WithHeaders(sipuri.Headers{
 			"headers": {""},
 		}),
 	)
@@ -75,10 +75,10 @@ func ExampleNew() {
 		"user",
 		"host:port",
 		sipuri.WithPassword("password"),
-		sipuri.WithParams(sipuri.KeyValuePairs{
+		sipuri.WithParams(sipuri.Params{
 			"uri-parameters": {""},
 		}),
-		sipuri.WithHeaders(sipuri.KeyValuePairs{
+		sipuri.WithHeaders(sipuri.Headers{
 			"headers": {""},
 		}),
 	)

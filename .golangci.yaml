@@ -18,6 +18,11 @@ linters:
           allow:
             - $gostd
             - github.com/percivalalb/sipuri
+    revive:
+      rules:
+        package-comments:
+          exclude:
+            - internal/.*
     varnamelen:
       max-distance: 17 # default of 5 makes the linter annoying to use.
   exclusions:

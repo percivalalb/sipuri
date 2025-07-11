@@ -1,6 +1,10 @@
 package sipuri
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/percivalalb/sipuri/internal"
+)
 
 // Parse parses the given uri.
 func Parse(uri string) (*URI, error) {
@@ -63,7 +67,7 @@ func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 	// RFC requires : to be escaped in the userinfo. So split on :.
 	sipURI.user, sipURI.pass, sipURI.hadPass = strings.Cut(userinfo, ":")
 
-	user, err := Unescape(sipURI.user)
+	user, err := internal.Unescape(sipURI.user)
 	if err != nil {
 		return nil, MalformedURIError{Cause: MalformedUser, Err: err}
 	}
@@ -72,7 +76,7 @@ func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 
 	// Typically the host should not contain any escaped characters but
 	// it is possible in the spec.
-	host, err = Unescape(host)
+	host, err = internal.Unescape(host)
 	if err != nil {
 		return nil, MalformedURIError{Cause: MalformedHost, Err: err}
 	}
@@ -86,16 +90,16 @@ func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 
 	switch {
 	case params == "":
-		sipURI.params = EmptyStore{}
+		sipURI.params = internal.EmptyStore{}
 	case lazy:
-		var temp LazyStore
+		var temp internal.LazyStore
 		if err := (&temp).Decode(params, ";"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
 		}
 
 		sipURI.params = &temp
 	default:
-		var temp KeyValuePairs
+		var temp internal.KeyValuePairs
 		if err := (&temp).Decode(params, ";"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
 		}
@@ -105,16 +109,16 @@ func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 
 	switch {
 	case headers == "":
-		sipURI.headers = EmptyStore{}
+		sipURI.headers = internal.EmptyStore{}
 	case lazy:
-		var temp LazyStore
+		var temp internal.LazyStore
 		if err := (&temp).Decode(headers, "&"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}
 		}
 
 		sipURI.headers = &temp
 	default:
-		var temp KeyValuePairs
+		var temp internal.KeyValuePairs
 		if err := (&temp).Decode(headers, "&"); err != nil {
 			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}
 		}

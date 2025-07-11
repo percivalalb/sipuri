@@ -30,10 +30,10 @@ func TestParse(t *testing.T) {
 			"user",
 			"host:port",
 			sipuri.WithPassword("password"),
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"uri-parameters": {""},
 			}),
-			sipuri.WithHeaders(sipuri.KeyValuePairs{
+			sipuri.WithHeaders(sipuri.Headers{
 				"headers": {""},
 			}),
 		), "UDP", "template uri"},
@@ -47,7 +47,7 @@ func TestParse(t *testing.T) {
 			"alice",
 			"atlanta.com",
 			sipuri.WithPassword("secretword"),
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"transport": {"tcp"},
 			}),
 		), "TCP", "RFC example #1"},
@@ -55,7 +55,7 @@ func TestParse(t *testing.T) {
 			"alice",
 			"atlanta.com",
 			sipuri.Secure(),
-			sipuri.WithHeaders(sipuri.KeyValuePairs{
+			sipuri.WithHeaders(sipuri.Headers{
 				"subject":  {"project x"},
 				"priority": {"urgent"},
 			}),
@@ -64,7 +64,7 @@ func TestParse(t *testing.T) {
 			"+1-212-555-1212",
 			"gateway.com",
 			sipuri.WithPassword("1234"),
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"user": {"phone"},
 			}),
 		), "UDP", "RFC example #3"},
@@ -80,10 +80,10 @@ func TestParse(t *testing.T) {
 		{"sip:atlanta.com;method=REGISTER?to=alice%40atlanta.com", sipuri.New(
 			"",
 			"atlanta.com",
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"method": {"REGISTER"},
 			}),
-			sipuri.WithHeaders(sipuri.KeyValuePairs{
+			sipuri.WithHeaders(sipuri.Headers{
 				"to": {"alice@atlanta.com"},
 			}),
 		), "UDP", "RFC example #6"},
@@ -106,14 +106,14 @@ func TestParse(t *testing.T) {
 		{"sip:bob@nokia.com;transport=tcp", sipuri.New(
 			"bob",
 			"nokia.com",
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"transport": {"tcp"},
 			}),
 		), "TCP", "O'Reilly example #2"},
 		{"sip:+1-212-555-1234@gw.com;user=phone", sipuri.New(
 			"+1-212-555-1234",
 			"gw.com",
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"user": {"phone"},
 			}),
 		), "UDP", "O'Reilly example #3"},
@@ -124,7 +124,7 @@ func TestParse(t *testing.T) {
 		{"sip:bob.smith@registrar.com;method=REGISTER", sipuri.New(
 			"bob.smith",
 			"registrar.com",
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"method": {"REGISTER"},
 			}),
 		), "UDP", "O'Reilly example #5"},
