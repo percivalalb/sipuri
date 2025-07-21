@@ -120,19 +120,19 @@ func (sipURI URI) String() string {
 
 	builder.WriteString(internal.Escape(sipURI.host, internal.EncodeHost))
 
-	if sipURI.hadParam || !sipURI.Params().Empty() {
+	if sipURI.hadParam || sipURI.Params().Len() > 0 {
 		builder.WriteByte(';')
 	}
 
-	if !sipURI.Params().Empty() {
+	if sipURI.Params().Len() > 0 {
 		builder.WriteString(sipURI.Params().Encode())
 	}
 
-	if sipURI.hadHeader || !sipURI.Headers().Empty() {
+	if sipURI.hadHeader || sipURI.Headers().Len() > 0 {
 		builder.WriteByte('?')
 	}
 
-	if !sipURI.Headers().Empty() {
+	if sipURI.Headers().Len() > 0 {
 		builder.WriteString(sipURI.Headers().Encode())
 	}
 

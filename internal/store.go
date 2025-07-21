@@ -15,8 +15,6 @@ type KeyValueStore interface {
 	Encode() string
 	// Len returns the number of distinct keys.
 	Len() int
-	// Empty returns if the store contains no keys.
-	Empty() bool
 }
 
 // KeyValuePairs stores key to values similar to that of [url.Values]
@@ -91,11 +89,6 @@ func (m KeyValuePairs) Len() int {
 	return len(m)
 }
 
-// Empty returns if the store contains no keys.
-func (m KeyValuePairs) Empty() bool {
-	return len(m) == 0
-}
-
 // EmptyStore represents an always empty multi-valued map.
 type EmptyStore struct{}
 
@@ -129,11 +122,6 @@ func (EmptyStore) Encode() string {
 // Len returns the number of distinct keys.
 func (EmptyStore) Len() int {
 	return 0
-}
-
-// Empty returns if the store contains no keys.
-func (EmptyStore) Empty() bool {
-	return true
 }
 
 // LazyStore lazily loads a [KeyValuePairs] struct when inspected.
@@ -187,15 +175,6 @@ func (s *LazyStore) Len() int {
 	s.load()
 
 	return s.KeyValuePairs.Len()
-}
-
-// Empty returns if the store contains no keys.
-func (s *LazyStore) Empty() bool {
-	if s.KeyValuePairs != nil {
-		return s.KeyValuePairs.Empty()
-	}
-
-	return s.input == ""
 }
 
 func (s *LazyStore) load() {
