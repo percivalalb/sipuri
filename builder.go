@@ -34,6 +34,7 @@ type Params = map[string][]string
 func WithParams(params Params) uriOption {
 	return func(u *URI) {
 		u.params = internal.KeyValuePairs(params)
+		u.hadParam = true
 	}
 }
 
@@ -53,6 +54,7 @@ type Headers = map[string][]string
 func WithHeaders(headers Headers) uriOption {
 	return func(u *URI) {
 		u.headers = internal.KeyValuePairs(headers)
+		u.hadHeader = true
 	}
 }
 
@@ -63,6 +65,7 @@ func WithHeaders(headers Headers) uriOption {
 func WithPassword(pass string) uriOption {
 	return func(u *URI) {
 		u.pass = pass
+		u.hadPass = true
 	}
 }
 
