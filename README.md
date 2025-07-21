@@ -60,6 +60,7 @@ func main() {
 	uri := sipuri.New(
 		"user",
 		"host:port",
+		// sipuri.Secure(), // Change from sip: to sips:
 		sipuri.WithPassword("password"),
 		sipuri.WithParams(sipuri.Params{
 			"uri-parameters": {""},

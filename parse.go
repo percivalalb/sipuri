@@ -6,7 +6,7 @@ import (
 	"github.com/percivalalb/sipuri/internal"
 )
 
-// Parse parses the given uri.
+// Parse parses the given URI.
 func Parse(uri string) (*URI, error) {
 	if strings.HasPrefix(uri, SIPProtocol) {
 		return parse(SIP, uri[len(SIPProtocol):], false)
@@ -19,7 +19,10 @@ func Parse(uri string) (*URI, error) {
 	return nil, MalformedError{Cause: InvalidScheme}
 }
 
-// ParseLazy parses the given uri, lazily loading the uri parameters & headers.
+// ParseLazy parses the given URI, lazily decoding the URI params & headers.
+//
+// Prefer [Parse] over this function. This version is intended where latency
+// is paramount and params & headers are not inspected.
 func ParseLazy(uri string) (*URI, error) {
 	if strings.HasPrefix(uri, SIPProtocol) {
 		return parse(SIP, uri[len(SIPProtocol):], true)

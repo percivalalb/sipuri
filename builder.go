@@ -25,12 +25,14 @@ type Params = map[string][]string
 // WithParams allows URI params to be set.
 //
 // It takes a map of string keys paired to a slice of string values.
-// The underlying type is map[string][]string. [net/url.Values] can also
-// be used as a drop in. Example:
+// Example:
 //
 //	sipuri.Params{
 //		"param1": {"value1", "value2"},
 //	}
+//
+// [net/url.Values] can also be used as a drop-in given they are an alias for
+// the same underlying type map[string][]string.
 func WithParams(params Params) uriOption {
 	return func(u *URI) {
 		u.params = internal.KeyValuePairs(params)
@@ -45,12 +47,14 @@ type Headers = map[string][]string
 // WithHeaders allows URI headers to be set.
 //
 // It takes a map of string keys paired to a slice of string values.
-// The underlying type is map[string][]string. [net/url.Values] can also
-// be used as a drop in. Example:
+// Example:
 //
 //	sipuri.Headers{
 //		"header1": {"value1", "value2"},
 //	}
+//
+// [net/url.Values] can also be used as a drop-in given they are an alias for
+// the same underlying type map[string][]string.
 func WithHeaders(headers Headers) uriOption {
 	return func(u *URI) {
 		u.headers = internal.KeyValuePairs(headers)
@@ -60,7 +64,7 @@ func WithHeaders(headers Headers) uriOption {
 
 // WithPassword allows the password portion of the user-info to be set.
 //
-// Use of a password is not advised and is inherently insecure. Use other
+// N.b. Use of a password is not advised and is inherently insecure. Use other
 // methods to ensure communication.
 func WithPassword(pass string) uriOption {
 	return func(u *URI) {

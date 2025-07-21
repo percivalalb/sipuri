@@ -250,7 +250,7 @@ func ExampleParse() {
 		panic(err)
 	}
 
-	// Print the consistent components
+	// Print the constituent components:
 	fmt.Println(sipURI.User())
 	fmt.Println(sipURI.Password())
 	fmt.Println(sipURI.Host())
@@ -258,7 +258,7 @@ func ExampleParse() {
 	fmt.Printf("%q\n", sipURI.Headers().GetAll("headers"))
 	fmt.Printf("%q\n", sipURI.Headers().Keys())
 
-	// Re-construct the URI
+	// Re-construct the URI:
 	fmt.Println(sipURI.String())
 
 	// Output:

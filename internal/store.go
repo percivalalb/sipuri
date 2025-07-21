@@ -2,7 +2,7 @@ package internal
 
 import "sync"
 
-// KeyValueStore provides access to a multi-valued map.
+// KeyValueStore provides access to a multi-valued key/value map.
 type KeyValueStore interface {
 	// Get returns the first value for the given key. Empty string otherwise.
 	Get(key string) string
@@ -17,11 +17,11 @@ type KeyValueStore interface {
 	Len() int
 }
 
-// KeyValuePairs stores key to values similar to that of [url.Values]
+// KeyValuePairs stores key to values similar to that of [net/url.Values]
 // and implements [KeyValueStore].
 type KeyValuePairs map[string][]string
 
-// Decode populates the Store with the given data, returing any encoding errors
+// Decode populates the store with the given data, returing any encoding errors
 // encountered.
 func (m *KeyValuePairs) Decode(input, separator string) error {
 	var err error

@@ -74,6 +74,7 @@ func ExampleNew() {
 	sipURI := sipuri.New(
 		"user",
 		"host:port",
+		sipuri.Secure(),
 		sipuri.WithPassword("password"),
 		sipuri.WithParams(sipuri.Params{
 			"uri-parameters": {""},
@@ -83,9 +84,9 @@ func ExampleNew() {
 		}),
 	)
 
-	// Re-construct the URI
+	// Construct the URI:
 	fmt.Println(sipURI.String())
 
 	// Output:
-	// sip:user:password@host:port;uri-parameters=?headers=
+	// sips:user:password@host:port;uri-parameters=?headers=
 }
