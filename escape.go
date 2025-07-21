@@ -317,6 +317,8 @@ func checkValidHexCharacter(hex byte) byte {
 type KeyValueStore interface {
 	// Get returns the first value for the given key. Empty string otherwise.
 	Get(key string) string
+	// GetAll returns all the values for the given key. Nil slice otherwise.
+	GetAll(key string) []string
 	// Encode stringifies the multi-valued map, url encoding keys and values
 	// joining with an ampersand.
 	Encode() string
@@ -354,6 +356,23 @@ func (m KeyValuePairs) Get(key string) string {
 	return vs[0]
 }
 
+// GetAll returns all the values for the given key. Nil slice otherwise.
+func (m KeyValuePairs) GetAll(key string) []string {
+	if m == nil {
+		return nil
+	}
+
+	vs := m[key]
+	if len(vs) == 0 {
+		return nil
+	}
+
+	c := make([]string, len(vs))
+	copy(c, vs)
+
+	return c
+}
+
 // Encode stringifies the multi-valued map, url encoding keys and values
 // joining with an ampersand.
 func (m KeyValuePairs) Encode() string {
@@ -382,6 +401,11 @@ func (EmptyStore) Decode(_, _ string) error {
 // Get returns the first value for the given key. Empty string otherwise.
 func (EmptyStore) Get(_ string) string {
 	return ""
+}
+
+// GetAll returns all the values for the given key. Nil slice otherwise.
+func (EmptyStore) GetAll(_ string) []string {
+	return nil
 }
 
 // Encode stringifies the multi-valued map, url encoding keys and values
@@ -421,6 +445,13 @@ func (s *LazyStore) Get(key string) string {
 	s.load()
 
 	return s.KeyValuePairs.Get(key)
+}
+
+// GetAll returns all the values for the given key. Nil slice otherwise.
+func (s *LazyStore) GetAll(key string) []string {
+	s.load()
+
+	return s.KeyValuePairs.GetAll(key)
 }
 
 // Encode stringifies the multi-valued map, url encoding keys and values

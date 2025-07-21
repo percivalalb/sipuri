@@ -24,20 +24,20 @@ import (
 
 func main() {
 	// Parse the URI. Errors on unexpected schemes or malformed URIs
-  	sipURI, err := sipuri.Parse("sip:user:password@host:port;uri-parameters?headers")
+	sipURI, err := sipuri.Parse("sip:user:password@host:port;uri-parameters?headers")
 	if err != nil {
 		panic(err)
 	}
 
-	// Print the consistent components
-   	fmt.Println(sipURI.User()) // user
-   	fmt.Println(sipURI.Password()) // password
-    	fmt.Println(sipURI.Host()) // host:port
-    	fmt.Printf("%v\n", sipURI.Params())  // map[uri-parameters:[]]
-    	fmt.Printf("%v\n", sipURI.Headers()) // map[headers:[]]
+	// Print the constituent components
+	fmt.Println(sipURI.User()) // "user"
+	fmt.Println(sipURI.Password()) // "password"
+	fmt.Println(sipURI.Host()) // "host:port"
+	fmt.Println(sipURI.Params().Get("uri-parameters"))  // ""
+	fmt.Println(sipURI.Headers().GetAll("headers")) // []string{""}
 
 	// Re-construct the URI
-	fmt.Println(sipURI.String()) // sip:user:password@host:port;uri-parameters=?headers=
+	fmt.Println(sipURI.String()) // "sip:user:password@host:port;uri-parameters?headers"
 }
 ```
 
