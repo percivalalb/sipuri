@@ -3,6 +3,7 @@ package sipuri
 import (
 	"sort"
 	"strings"
+	"sync"
 )
 
 // This file is an alternative to the stdlib module url with some
@@ -404,6 +405,7 @@ func (EmptyStore) Empty() bool {
 type LazyStore struct {
 	KeyValuePairs
 
+	once      sync.Once // protects the above
 	input     string
 	separator string
 }
@@ -448,15 +450,13 @@ func (s *LazyStore) Empty() bool {
 }
 
 func (s *LazyStore) load() {
-	if s.KeyValuePairs != nil {
-		return
-	}
+	s.once.Do(func() {
+		// Any possible errors have already been checked in the Decode
+		// call to [UnescapeErrorChecker].
+		//nolint:errcheck,gosec
+		(&s.KeyValuePairs).Decode(s.input, s.separator)
 
-	// Any possible errors have already been checked in the Decode
-	// call to [UnescapeErrorChecker].
-	//nolint:errcheck,gosec
-	(&s.KeyValuePairs).Decode(s.input, s.separator)
-
-	s.input = ""
-	s.separator = ""
+		s.input = ""
+		s.separator = ""
+	})
 }
