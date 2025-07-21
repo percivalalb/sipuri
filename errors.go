@@ -7,9 +7,6 @@ import (
 	"github.com/percivalalb/sipuri/internal"
 )
 
-// ErrInvalidScheme is returned when a string that does not start sip: or sips: is given.
-var ErrInvalidScheme = errors.New("sip: scheme invalid")
-
 // MalformCause indicates what part of the URI failed to be parsed.
 type MalformCause uint8
 
@@ -17,6 +14,7 @@ type MalformCause uint8
 // earliest part of the URI is returned.
 const (
 	Unspecified MalformCause = iota
+	InvalidScheme
 	MissingUser
 	MissingHost
 	MalformedUser
@@ -30,6 +28,8 @@ func (c MalformCause) String() string {
 	switch c {
 	case Unspecified:
 		return "unspecified"
+	case InvalidScheme:
+		return "invalid scheme"
 	case MissingUser:
 		return "missing user"
 	case MissingHost:

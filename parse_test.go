@@ -171,7 +171,7 @@ func TestParseError(t *testing.T) {
 	tests := []test{
 		{
 			"user@example.sip.twilio.com;transport=TCP",
-			sipuri.ErrInvalidScheme,
+			sipuri.MalformedURIError{Cause: sipuri.InvalidScheme},
 			"no scheme present",
 		},
 		{

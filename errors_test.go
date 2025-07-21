@@ -42,7 +42,7 @@ func TestMalformCause(t *testing.T) {
 	t.Parallel()
 
 	tests := []sipuri.MalformCause{
-		sipuri.Unspecified, sipuri.MissingUser, sipuri.MissingHost,
+		sipuri.Unspecified, sipuri.InvalidScheme, sipuri.MissingUser, sipuri.MissingHost,
 		sipuri.MalformedUser, sipuri.MalformedParams, sipuri.MalformedHeaders,
 	}
 

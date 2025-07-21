@@ -16,7 +16,7 @@ func Parse(uri string) (*URI, error) {
 		return parse(SIPS, uri[len(SIPSProtocol):], false)
 	}
 
-	return nil, ErrInvalidScheme
+	return nil, MalformedURIError{Cause: InvalidScheme}
 }
 
 // ParseLazy parses the given uri, lazily loading the uri parameters & headers.
@@ -29,7 +29,7 @@ func ParseLazy(uri string) (*URI, error) {
 		return parse(SIPS, uri[len(SIPSProtocol):], true)
 	}
 
-	return nil, ErrInvalidScheme
+	return nil, MalformedURIError{Cause: InvalidScheme}
 }
 
 //nolint:cyclop,funlen
