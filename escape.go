@@ -334,6 +334,7 @@ type KeyValuePairs map[string][]string
 // encountered.
 func (m *KeyValuePairs) Decode(input, separator string) error {
 	var err error
+
 	*m, err = DecodeURLValues(input, separator)
 
 	return err
@@ -402,6 +403,7 @@ func (EmptyStore) Empty() bool {
 // LazyStore lazily loads a [KeyValuePairs] struct when inspected.
 type LazyStore struct {
 	KeyValuePairs
+
 	input     string
 	separator string
 }
