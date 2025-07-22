@@ -40,7 +40,7 @@ workflows:
   test:
     jobs:
       - golangci-lint/lint:
-          tag: 'v2.1.6'
+          tag: 'v2.3.0'
       - test:
           matrix:
             parameters:

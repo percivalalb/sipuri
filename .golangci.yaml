@@ -4,7 +4,9 @@ linters:
   default: all
   disable:
     - exhaustruct # is only intended for use in special cases.
+    - noinlineerr # personal preference
     - recvcheck
+    - wsl         # deprecated and replaced by wsl_v5
   settings:
     depguard:
       # Only allow imports from the stdlib & this module
