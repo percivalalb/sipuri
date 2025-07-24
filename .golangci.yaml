@@ -18,11 +18,6 @@ linters:
           allow:
             - $gostd
             - github.com/percivalalb/sipuri/v2
-    revive:
-      rules:
-        package-comments:
-          exclude:
-            - internal/.*
     varnamelen:
       max-distance: 17 # default of 5 makes the linter annoying to use.
   exclusions:
@@ -36,6 +31,10 @@ linters:
           - golint
           - revive
         text: returns unexported type.*sipuri\.uriOption
+      - linters:
+          - revive
+        text: 'package-comments: should have a package comment'
+        path: internal/*
       - linters:
           - ireturn
         path: sipuri\.go
