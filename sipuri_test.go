@@ -63,6 +63,8 @@ func TestNew(t *testing.T) {
 	equalF(t, "", uri.Headers().Get("headers"), "header mismatch")
 	equalF(t, []string{""}, uri.Params().GetAll("uri-parameters"), "param mismatch")
 	equalF(t, []string{""}, uri.Headers().GetAll("headers"), "header mismatch")
+	equalF(t, []string{"uri-parameters"}, uri.Params().Keys(), "all params present")
+	equalF(t, []string{"headers"}, uri.Headers().Keys(), "all headers present")
 	equalF(t, "", uri.Headers().Get("example"), "non-existent header present")
 	equalF(t, []string(nil), uri.Headers().GetAll("example"), "non-existent header present")
 	equalF(t, "sip:user:password@host:port;uri-parameters=?headers=", uri.String(), "stringify mismatch")

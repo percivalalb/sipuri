@@ -37,6 +37,7 @@ func main() {
 	fmt.Println(sipURI.Host()) // "host:port"
 	fmt.Println(sipURI.Params().Get("uri-parameters"))  // ""
 	fmt.Println(sipURI.Headers().GetAll("headers")) // []string{""}
+	fmt.Println(sipURI.Headers().Keys()) // []string{"headers"}
 
 	// Re-construct the URI string
 	fmt.Println(sipURI.String()) // "sip:user:password@host:port;uri-parameters=?headers="

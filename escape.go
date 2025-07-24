@@ -334,6 +334,8 @@ type KeyValueStore interface {
 	Get(key string) string
 	// GetAll returns all the values for the given key. Nil slice otherwise.
 	GetAll(key string) []string
+	// Keys returns all the keys in no particular order. Nil slice if there are none.
+	Keys() []string
 	// Encode stringifies the multi-valued map, url encoding keys and values
 	// joining with an ampersand.
 	Encode() string
@@ -388,6 +390,22 @@ func (m KeyValuePairs) GetAll(key string) []string {
 	return c
 }
 
+// Keys returns all the keys in no particular order. Nil slice if there are none.
+func (m KeyValuePairs) Keys() []string {
+	l := len(m)
+	if l == 0 {
+		return nil
+	}
+
+	keys := make([]string, 0, l)
+
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	return keys
+}
+
 // Encode stringifies the multi-valued map, url encoding keys and values
 // joining with an ampersand.
 func (m KeyValuePairs) Encode() string {
@@ -420,6 +438,11 @@ func (EmptyStore) Get(_ string) string {
 
 // GetAll returns all the values for the given key. Nil slice otherwise.
 func (EmptyStore) GetAll(_ string) []string {
+	return nil
+}
+
+// Keys returns all the keys in no particular order. Nil slice if there are none.
+func (EmptyStore) Keys() []string {
 	return nil
 }
 
@@ -468,6 +491,13 @@ func (s *LazyStore) GetAll(key string) []string {
 	s.load()
 
 	return s.KeyValuePairs.GetAll(key)
+}
+
+// Keys returns all the keys in no particular order. Nil slice if there are none.
+func (s *LazyStore) Keys() []string {
+	s.load()
+
+	return s.KeyValuePairs.Keys()
 }
 
 // Encode stringifies the multi-valued map, url encoding keys and values
