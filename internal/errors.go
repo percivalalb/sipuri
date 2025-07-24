@@ -2,7 +2,7 @@ package internal
 
 import "strconv"
 
-// EscapeError is returned when a '%' character in a URL string is not
+// URIEscapeError is returned when a '%' character in a URL string is not
 // followed by a valid hexadecimal byte.
 type URIEscapeError string
 

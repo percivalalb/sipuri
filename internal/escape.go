@@ -13,6 +13,8 @@ import (
 
 type encoding int
 
+// There are slight variations in the range of characters encoded in different
+// components of the URI. See [shouldEscape] for a break down in the code.
 const (
 	EncodeHost encoding = 1 + iota
 	EncodeUserPassword
@@ -64,7 +66,7 @@ func (mode encoding) shouldEscape(char byte) bool {
 	return true
 }
 
-// escape encodes characters based on the context of the string
+// Escape encodes characters based on the context of the string
 //
 // Based on url.escape but tweaked and optimised.
 func Escape(input string, mode encoding) string {
