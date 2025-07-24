@@ -254,8 +254,9 @@ func ExampleParse() {
 	fmt.Println(sipURI.User())
 	fmt.Println(sipURI.Password())
 	fmt.Println(sipURI.Host())
-	fmt.Printf("%v\n", sipURI.Params())
-	fmt.Printf("%v\n", sipURI.Headers())
+	fmt.Printf("%q\n", sipURI.Params().Get("uri-parameters"))
+	fmt.Printf("%q\n", sipURI.Headers().GetAll("headers"))
+	fmt.Printf("%q\n", sipURI.Headers().Keys())
 
 	// Re-construct the URI
 	fmt.Println(sipURI.String())
@@ -264,8 +265,9 @@ func ExampleParse() {
 	// user
 	// password
 	// host:port
-	// map[uri-parameters:[]]
-	// map[headers:[]]
+	// ""
+	// [""]
+	// ["headers"]
 	// sip:user:password@host:port;uri-parameters=?headers=
 }
 
