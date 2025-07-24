@@ -40,6 +40,13 @@ func TestURLEncodeURLValues(t *testing.T) {
 			"",
 			"zero-length key-value pair",
 		},
+		{
+			internal.KeyValuePairs{
+				"a%a": []string{"%bb"},
+			},
+			"a%25a=%25bb",
+			"encoding percentage symbol",
+		},
 	}
 
 	for _, test := range tests {
