@@ -126,7 +126,7 @@ func DecodeURLValues(input string, separator string) (KeyValuePairs, error) {
 // It is also slightly more efficient at 10% faster, with around 35% less
 // bytes written & over half the allocations per operation.
 //
-//nolint:cyclop
+//nolint:cyclop,funlen
 func EncodeURLValues(input map[string][]string) string {
 	// short-circuit in the empty case
 	keyCount := len(input)
@@ -137,9 +137,14 @@ func EncodeURLValues(input map[string][]string) string {
 	var charCount, hexCount, keyValuesCount int
 
 	keys := make([]string, 0, keyCount)
+
 	for key, vals := range input {
-		keys = append(keys, key)
 		vsCount := len(vals)
+		if vsCount == 0 {
+			continue
+		}
+
+		keys = append(keys, key)
 
 		for i := 0; i < len(key); i++ {
 			if encodeQueryComponent.shouldEscape(key[i]) {
@@ -161,6 +166,11 @@ func EncodeURLValues(input map[string][]string) string {
 		}
 	}
 
+	// Short circuit if all the keys have zero values.
+	if keyValuesCount == 0 {
+		return ""
+	}
+
 	required := charCount + // total characters in the keys
 		2*hexCount + // additional characters due to the encoding %xx that's two more x's
 		2*keyValuesCount - 1 // separating & and =
@@ -168,7 +178,7 @@ func EncodeURLValues(input map[string][]string) string {
 
 	sort.Strings(keys)
 
-	pos := 0
+	var pos int
 
 	for _, key := range keys {
 		for _, val := range input[key] {
@@ -249,9 +259,13 @@ func Unescape(input string) (string, error) {
 // or decoding the string it returns an error if and only if the aforementioned does.
 func UnescapeErrorChecker(input string) error {
 	l := len(input)
-	if input[l-1] == '%' {
+
+	switch {
+	case l == 0:
+		return nil
+	case input[l-1] == '%':
 		return EscapeError("%")
-	} else if input[l-2] == '%' {
+	case input[l-2] == '%':
 		return EscapeError(input[l-2:])
 	}
 
