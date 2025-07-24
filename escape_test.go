@@ -11,10 +11,41 @@ import (
 func TestURLEncodeURLValues(t *testing.T) {
 	t.Parallel()
 
-	query := getTestURLValues()
-	got := sipuri.EncodeURLValues(query)
+	type test struct {
+		input  map[string][]string
+		expect string
+		msg    string
+	}
 
-	equalF(t, testQueryString, got, "encodeURLValues(%v) = %q want %q", query, got, testQueryString)
+	tests := []test{
+		{
+			getTestURLValues(),
+			testQueryString,
+			"typical example",
+		},
+		{
+			sipuri.KeyValuePairs{
+				"shapes":  []string{"square", "circle"},
+				"colours": []string{"red", "blue", "green"},
+			},
+			"colours=red&colours=blue&colours=green&shapes=square&shapes=circle",
+			"zero-length key-value pair",
+		},
+		{
+			sipuri.KeyValuePairs{
+				"users": nil,
+			},
+			"",
+			"zero-length key-value pair",
+		},
+	}
+
+	for _, test := range tests {
+		got := sipuri.EncodeURLValues(test.input)
+
+		equalF(t, test.expect, got, "%s: encodeURLValues(%v) = %q want %q",
+			test.msg, test.input, got, testQueryString)
+	}
 }
 
 func TestURLDecodeURLValues(t *testing.T) {

@@ -10,6 +10,39 @@ import (
 func TestNew(t *testing.T) {
 	t.Parallel()
 
+	type test struct {
+		uri    string
+		sipURI sipuri.URI
+		msg    string
+	}
+
+	tests := []test{
+		{"sip:user:password@host:port;uri-parameters=?headers=", sipuri.New(
+			"user",
+			"host:port",
+			sipuri.WithPassword("password"),
+			sipuri.WithParams(sipuri.KeyValuePairs{
+				"uri-parameters": {""},
+			}),
+			sipuri.WithHeaders(sipuri.KeyValuePairs{
+				"headers": {""},
+			}),
+		), "template uri"},
+		{"sips:user@host", sipuri.New("user", "host", sipuri.Secure()), "secure upgrade"},
+		{"sip:user@host;key1=value1&key2=value2&key2=value3", sipuri.New(
+			"user", "host",
+			sipuri.WithParams(sipuri.KeyValuePairs{
+				"key1": {"value1"},
+				"key2": {"value2", "value3"},
+				"key3": nil,
+			}),
+		), "secure"},
+	}
+
+	for _, test := range tests {
+		equalF(t, test.uri, test.sipURI.String(), "stringify mismatch")
+	}
+
 	uri := sipuri.New(
 		"user",
 		"host:port",
@@ -32,7 +65,6 @@ func TestNew(t *testing.T) {
 	equalF(t, []string{""}, uri.Headers().GetAll("headers"), "header mismatch")
 	equalF(t, "", uri.Headers().Get("example"), "non-existent header present")
 	equalF(t, []string(nil), uri.Headers().GetAll("example"), "non-existent header present")
-
 	equalF(t, "sip:user:password@host:port;uri-parameters=?headers=", uri.String(), "stringify mismatch")
 }
 
