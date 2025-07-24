@@ -7,12 +7,12 @@ import (
 	"github.com/percivalalb/sipuri"
 )
 
-func TestMalformedURIError(t *testing.T) {
+func TestMalformedError(t *testing.T) {
 	t.Parallel()
 
-	unspecifiedErr := sipuri.MalformedURIError{} // zero value
-	missingUserErr := sipuri.MalformedURIError{Cause: sipuri.MissingUser}
-	missingHostErr := sipuri.MalformedURIError{Cause: sipuri.MissingHost}
+	unspecifiedErr := sipuri.MalformedError{} // zero value
+	missingUserErr := sipuri.MalformedError{Cause: sipuri.MissingUser}
+	missingHostErr := sipuri.MalformedError{Cause: sipuri.MissingHost}
 
 	if !errors.Is(missingUserErr, unspecifiedErr) {
 		t.Fatalf("unspecified cause matches any malform error")
@@ -26,16 +26,16 @@ func TestMalformedURIError(t *testing.T) {
 		t.Fatalf("specific cause matches does not match another cause")
 	}
 
-	var malformError sipuri.MalformedURIError
+	var malformError sipuri.MalformedError
 	if !errors.As(missingUserErr, &malformError) {
 		t.Fatalf("unspecified cause malform error")
 	}
 
 	equalF(t, missingUserErr.Cause, malformError.Cause, "error.As for same cause")
 
-	equalF(t, "sip: malformed uri", unspecifiedErr.Error(), "unspecified cause string representation")
-	equalF(t, "sip: malformed uri: missing user", missingUserErr.Error(), "missing user cause string representation")
-	equalF(t, "sip: malformed uri: missing host", missingHostErr.Error(), "missing host cause string representation")
+	equalF(t, "sip: malformed URI", unspecifiedErr.Error(), "unspecified cause string representation")
+	equalF(t, "sip: malformed URI: missing user", missingUserErr.Error(), "missing user cause string representation")
+	equalF(t, "sip: malformed URI: missing host", missingHostErr.Error(), "missing host cause string representation")
 }
 
 func TestMalformCause(t *testing.T) {

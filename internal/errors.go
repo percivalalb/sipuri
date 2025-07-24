@@ -2,17 +2,18 @@ package internal
 
 import "strconv"
 
-// EscapeError is returned when a byte-pair has been incorrectly URL encoded.
-type EscapeError string
+// EscapeError is returned when a '%' character in a URL string is not
+// followed by a valid hexadecimal byte.
+type URIEscapeError string
 
 // Error returns the string representation of the error.
-func (e EscapeError) Error() string {
+func (e URIEscapeError) Error() string {
 	return "sip: invalid URL escape " + strconv.Quote(string(e))
 }
 
 // Is allows [EscapeError] to be compared by [errors.Is].
-func (e EscapeError) Is(input error) bool {
-	_, ok := input.(EscapeError)
+func (e URIEscapeError) Is(input error) bool {
+	_, ok := input.(URIEscapeError)
 
 	return ok
 }

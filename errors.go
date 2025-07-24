@@ -10,14 +10,14 @@ import (
 // MalformCause indicates what part of the URI failed to be parsed.
 type MalformCause uint8
 
-// The possible reasons a URI could be malformed. The cause which relates to the
-// earliest part of the URI is returned.
+// Below are the possible reasons a URI could be malformed. The causes are ordered
+// in the order they are checked.
 const (
 	Unspecified MalformCause = iota
 	InvalidScheme
 	MissingUser
-	MissingHost
 	MalformedUser
+	MissingHost
 	MalformedHost
 	MalformedParams
 	MalformedHeaders
@@ -47,17 +47,17 @@ func (c MalformCause) String() string {
 	}
 }
 
-// MalformedURIError encapsulates an error while processing a sip or sips URI.
-type MalformedURIError struct {
+// MalformedError encapsulates an error while parsing a sip or sips URI.
+type MalformedError struct {
 	Cause MalformCause
 	Err   error
 }
 
 // Error returns a string representation of the error.
-func (err MalformedURIError) Error() string {
+func (err MalformedError) Error() string {
 	var builder strings.Builder
 
-	builder.WriteString("sip: malformed uri")
+	builder.WriteString("sip: malformed URI")
 
 	if err.Cause != Unspecified {
 		builder.WriteString(": " + err.Cause.String())
@@ -70,12 +70,12 @@ func (err MalformedURIError) Error() string {
 	return builder.String()
 }
 
-// Is returns if the given error is also a [MalformedURIError] struct of the same cause.
+// Is returns if the given error is also a [MalformedError] struct of the same cause.
 //
 // If the input does not have a cause specified then it matches any
-// [MalformedURIError] struct.
-func (err MalformedURIError) Is(input error) bool {
-	var inputMal MalformedURIError
+// [MalformedError] struct.
+func (err MalformedError) Is(input error) bool {
+	var inputMal MalformedError
 	if errors.As(input, &inputMal) {
 		return inputMal.Cause == Unspecified || inputMal.Cause == err.Cause
 	}
@@ -84,9 +84,10 @@ func (err MalformedURIError) Is(input error) bool {
 }
 
 // Unwrap returns the underlying error.
-func (err MalformedURIError) Unwrap() error {
+func (err MalformedError) Unwrap() error {
 	return err.Err
 }
 
-// EscapeError is returned when a byte-pair has been incorrectly URL encoded.
-type EscapeError = internal.EscapeError
+// EscapeError is returned when a '%' character in a URL string is not
+// followed by a valid hexadecimal byte.
+type EscapeError = internal.URIEscapeError

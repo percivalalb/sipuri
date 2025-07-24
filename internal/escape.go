@@ -231,7 +231,7 @@ func Unescape(input string) (string, error) {
 
 			// not enought characters for
 			if i >= len(input) {
-				return "", EscapeError(input[i-2:])
+				return "", URIEscapeError(input[i-2:])
 			}
 		}
 	}
@@ -263,9 +263,9 @@ func UnescapeErrorChecker(input string) error {
 	case l == 0:
 		return nil
 	case input[l-1] == '%':
-		return EscapeError("%")
+		return URIEscapeError("%")
 	case input[l-2] == '%':
-		return EscapeError(input[l-2:])
+		return URIEscapeError(input[l-2:])
 	}
 
 	for pos := 0; pos < l; pos++ {
@@ -274,7 +274,7 @@ func UnescapeErrorChecker(input string) error {
 			lByte := checkValidHexCharacter(input[pos+2])
 
 			if (gByte|lByte)&hexCharErrorBit != 0 {
-				return EscapeError(input[pos : pos+3])
+				return URIEscapeError(input[pos : pos+3])
 			}
 
 			pos += 2
@@ -295,7 +295,7 @@ func unescapeInto(input string, offset int, target []byte) (int, error) {
 			lByte := checkValidHexCharacter(input[pos+2])
 
 			if (gByte|lByte)&hexCharErrorBit != 0 {
-				return 0, EscapeError(input[pos : pos+3])
+				return 0, URIEscapeError(input[pos : pos+3])
 			}
 
 			target[offset] = gByte<<4 + lByte //nolint:mnd

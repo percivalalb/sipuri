@@ -171,62 +171,62 @@ func TestParseError(t *testing.T) {
 	tests := []test{
 		{
 			"user@example.sip.twilio.com;transport=TCP",
-			sipuri.MalformedURIError{Cause: sipuri.InvalidScheme},
+			sipuri.MalformedError{Cause: sipuri.InvalidScheme},
 			"no scheme present",
 		},
 		{
 			"sip:user@",
-			sipuri.MalformedURIError{Cause: sipuri.MissingHost},
+			sipuri.MalformedError{Cause: sipuri.MissingHost},
 			"no host present",
 		},
 		{
 			"sip:@",
-			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			sipuri.MalformedError{Cause: sipuri.MissingUser},
 			"lonely at symbol",
 		},
 		{
 			"sip:@;",
-			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			sipuri.MalformedError{Cause: sipuri.MissingUser},
 			"lonely at symbol",
 		},
 		{
 			"sip:user@;",
-			sipuri.MalformedURIError{Cause: sipuri.MissingHost},
+			sipuri.MalformedError{Cause: sipuri.MissingHost},
 			"lonely at symbol",
 		},
 		{
 			"sip:@example.sip.twilio.com",
-			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			sipuri.MalformedError{Cause: sipuri.MissingUser},
 			"no user present",
 		},
 		{
 			"sip:%xx@example.sip.twilio.com",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedUser},
+			sipuri.MalformedError{Cause: sipuri.MalformedUser},
 			"malformed url encoded users",
 		},
 		{
 			"sip:user@%xxexample.sip.twilio.com",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			sipuri.MalformedError{Cause: sipuri.MalformedHost},
 			"malformed url encoded host",
 		},
 		{
 			"sip:%xxexample.sip.twilio.com",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			sipuri.MalformedError{Cause: sipuri.MalformedHost},
 			"malformed url encoded host",
 		},
 		{
 			"sip:user@example.sip.twilio.com;%xx",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedParams},
+			sipuri.MalformedError{Cause: sipuri.MalformedParams},
 			"malformed url encoded params",
 		},
 		{
 			"sip:user@example.sip.twilio.com?%xx",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedHeaders},
+			sipuri.MalformedError{Cause: sipuri.MalformedHeaders},
 			"malformed url encoded headers",
 		},
 		{
 			"sip:[::1",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			sipuri.MalformedError{Cause: sipuri.MalformedHost},
 			"malformed ipv6 host",
 		},
 	}

@@ -119,7 +119,7 @@ func TestUnescapeError(t *testing.T) {
 
 	_, err := internal.Unescape("bark%2y")
 
-	if !errors.Is(err, internal.EscapeError("%2y")) {
+	if !errors.Is(err, internal.URIEscapeError("%2y")) {
 		t.Fatalf("err %v", err)
 	}
 
@@ -127,7 +127,7 @@ func TestUnescapeError(t *testing.T) {
 
 	_, err = internal.Unescape("bark%2")
 
-	if !errors.Is(err, internal.EscapeError("%2")) {
+	if !errors.Is(err, internal.URIEscapeError("%2")) {
 		t.Fatalf("err %v", err)
 	}
 
@@ -135,7 +135,7 @@ func TestUnescapeError(t *testing.T) {
 
 	_, err = internal.Unescape("bark%")
 
-	if !errors.Is(err, internal.EscapeError("%")) {
+	if !errors.Is(err, internal.URIEscapeError("%")) {
 		t.Fatalf("err %v", err)
 	}
 
