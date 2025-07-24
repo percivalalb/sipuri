@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/percivalalb/sipuri"
+	"github.com/percivalalb/sipuri/v2"
 )
 
 func TestNew(t *testing.T) {

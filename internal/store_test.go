@@ -4,7 +4,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/percivalalb/sipuri/internal"
+	"github.com/percivalalb/sipuri/v2/internal"
 )
 
 func TestKeyValueStore(t *testing.T) {

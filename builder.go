@@ -1,6 +1,6 @@
 package sipuri
 
-import "github.com/percivalalb/sipuri/internal"
+import "github.com/percivalalb/sipuri/v2/internal"
 
 // New constructs a SIP URI with the given options.
 func New(user, host string, opts ...uriOption) URI {

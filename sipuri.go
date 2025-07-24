@@ -11,7 +11,7 @@ import (
 	"net"
 	"strings"
 
-	"github.com/percivalalb/sipuri/internal"
+	"github.com/percivalalb/sipuri/v2/internal"
 )
 
 // The two sip protocols.

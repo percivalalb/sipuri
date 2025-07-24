@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/percivalalb/sipuri"
+	"github.com/percivalalb/sipuri/v2"
 )
 
 func TestMalformedError(t *testing.T) {

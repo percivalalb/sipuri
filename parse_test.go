@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/percivalalb/sipuri"
+	"github.com/percivalalb/sipuri/v2"
 )
 
 //nolint:gochecknoglobals

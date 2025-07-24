@@ -17,7 +17,7 @@ linters:
             - $all
           allow:
             - $gostd
-            - github.com/percivalalb/sipuri
+            - github.com/percivalalb/sipuri/v2
     revive:
       rules:
         package-comments:

@@ -3,7 +3,7 @@ package sipuri
 import (
 	"strings"
 
-	"github.com/percivalalb/sipuri/internal"
+	"github.com/percivalalb/sipuri/v2/internal"
 )
 
 // Parse parses the given URI.

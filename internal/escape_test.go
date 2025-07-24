@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/percivalalb/sipuri/internal"
+	"github.com/percivalalb/sipuri/v2/internal"
 )
 
 func TestURLEncodeURLValues(t *testing.T) {

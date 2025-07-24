@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/percivalalb/sipuri/internal"
+	"github.com/percivalalb/sipuri/v2/internal"
 )
 
 // MalformCause indicates what part of the URI failed to be parsed.
