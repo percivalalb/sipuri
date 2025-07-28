@@ -1,8 +1,12 @@
 package sipuri
 
-import "strings"
+import (
+	"strings"
 
-// Parse parses the given uri.
+	"github.com/percivalalb/sipuri/v2/internal"
+)
+
+// Parse parses the given URI.
 func Parse(uri string) (*URI, error) {
 	if strings.HasPrefix(uri, SIPProtocol) {
 		return parse(SIP, uri[len(SIPProtocol):], false)
@@ -12,10 +16,13 @@ func Parse(uri string) (*URI, error) {
 		return parse(SIPS, uri[len(SIPSProtocol):], false)
 	}
 
-	return nil, ErrInvalidScheme
+	return nil, MalformedError{Cause: InvalidScheme}
 }
 
-// ParseLazy parses the given uri, lazily loading the uri parameters & headers.
+// ParseLazy parses the given URI, lazily decoding the URI params & headers.
+//
+// Prefer [Parse] over this function. This version is intended where latency
+// is paramount and params & headers are not inspected.
 func ParseLazy(uri string) (*URI, error) {
 	if strings.HasPrefix(uri, SIPProtocol) {
 		return parse(SIP, uri[len(SIPProtocol):], true)
@@ -25,7 +32,7 @@ func ParseLazy(uri string) (*URI, error) {
 		return parse(SIPS, uri[len(SIPSProtocol):], true)
 	}
 
-	return nil, ErrInvalidScheme
+	return nil, MalformedError{Cause: InvalidScheme}
 }
 
 //nolint:cyclop,funlen
@@ -38,15 +45,25 @@ func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 	if hasAt {
 		// §19.1.1 "If the @ sign is present in a SIP or SIPS URI, the user field MUST NOT be empty."
 		if userinfo == "" {
-			return nil, MalformedURIError{Cause: MissingUser}
+			return nil, MalformedError{Cause: MissingUser}
 		}
 	} else {
 		userinfo, postfix = postfix, userinfo // swap (makes userinfo empty)
 	}
 
+	// RFC requires : to be escaped in the userinfo. So split on :.
+	sipURI.user, sipURI.pass, sipURI.hadPass = strings.Cut(userinfo, ":")
+
+	user, err := internal.Unescape(sipURI.user)
+	if err != nil {
+		return nil, MalformedError{Cause: MalformedUser, Err: err}
+	}
+
+	sipURI.user = user
+
 	// The uri must have been a single '@'
 	if postfix == "" {
-		return nil, MalformedURIError{Cause: MissingHost}
+		return nil, MalformedError{Cause: MissingHost}
 	}
 
 	prefix, headers, hadHeader := strings.Cut(postfix, "?")
@@ -54,50 +71,40 @@ func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 
 	// §19.1.2 host mandatory in all contexts
 	if host == "" {
-		return nil, MalformedURIError{Cause: MissingHost}
+		return nil, MalformedError{Cause: MissingHost}
 	}
 
 	sipURI.hadHeader = hadHeader
 	sipURI.hadParam = hadParam
 
-	// RFC requires : to be escaped in the userinfo. So split on :.
-	sipURI.user, sipURI.pass, sipURI.hadPass = strings.Cut(userinfo, ":")
-
-	user, err := Unescape(sipURI.user)
-	if err != nil {
-		return nil, MalformedURIError{Cause: MalformedUser, Err: err}
-	}
-
-	sipURI.user = user
-
 	// Typically the host should not contain any escaped characters but
 	// it is possible in the spec.
-	host, err = Unescape(host)
+	host, err = internal.Unescape(host)
 	if err != nil {
-		return nil, MalformedURIError{Cause: MalformedHost, Err: err}
+		return nil, MalformedError{Cause: MalformedHost, Err: err}
 	}
 
 	sipURI.host = host
 
 	// Check the host port is not malformed
 	if _, _, err := sipURI.SplitHostPort(); err != nil {
-		return nil, MalformedURIError{Cause: MalformedHost, Err: err}
+		return nil, MalformedError{Cause: MalformedHost, Err: err}
 	}
 
 	switch {
 	case params == "":
-		sipURI.params = EmptyStore{}
+		sipURI.params = internal.EmptyStore{}
 	case lazy:
-		var temp LazyStore
+		var temp internal.LazyStore
 		if err := (&temp).Decode(params, ";"); err != nil {
-			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
+			return nil, MalformedError{Cause: MalformedParams, Err: err}
 		}
 
 		sipURI.params = &temp
 	default:
-		var temp KeyValuePairs
+		var temp internal.KeyValuePairs
 		if err := (&temp).Decode(params, ";"); err != nil {
-			return nil, MalformedURIError{Cause: MalformedParams, Err: err}
+			return nil, MalformedError{Cause: MalformedParams, Err: err}
 		}
 
 		sipURI.params = temp
@@ -105,18 +112,18 @@ func parse(proto Protocol, uri string, lazy bool) (*URI, error) {
 
 	switch {
 	case headers == "":
-		sipURI.headers = EmptyStore{}
+		sipURI.headers = internal.EmptyStore{}
 	case lazy:
-		var temp LazyStore
+		var temp internal.LazyStore
 		if err := (&temp).Decode(headers, "&"); err != nil {
-			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}
+			return nil, MalformedError{Cause: MalformedHeaders, Err: err}
 		}
 
 		sipURI.headers = &temp
 	default:
-		var temp KeyValuePairs
+		var temp internal.KeyValuePairs
 		if err := (&temp).Decode(headers, "&"); err != nil {
-			return nil, MalformedURIError{Cause: MalformedHeaders, Err: err}
+			return nil, MalformedError{Cause: MalformedHeaders, Err: err}
 		}
 
 		sipURI.headers = temp

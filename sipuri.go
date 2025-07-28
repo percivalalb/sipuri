@@ -4,12 +4,14 @@
 //
 //	sip:user:password@host:port;uri-parameters?headers
 //
-// From https://www.rfc-editor.org/rfc/rfc3261#section-19
+// and follows the spec from https://www.rfc-editor.org/rfc/rfc3261#section-19
 package sipuri
 
 import (
 	"net"
 	"strings"
+
+	"github.com/percivalalb/sipuri/v2/internal"
 )
 
 // The two sip protocols.
@@ -34,63 +36,19 @@ type URI struct {
 	user    string
 	pass    string
 	host    string
-	params  KeyValueStore
-	headers KeyValueStore
+	params  internal.KeyValueStore
+	headers internal.KeyValueStore
 
 	hadPass   bool
 	hadParam  bool
 	hadHeader bool
 }
 
-type uriOption func(u *URI)
-
-// WithParams allows URI params to be set.
-func WithParams(params KeyValueStore) uriOption {
-	return func(u *URI) {
-		u.params = params
-	}
-}
-
-// WithHeaders allows URI headers to be set.
-func WithHeaders(headers KeyValueStore) uriOption {
-	return func(u *URI) {
-		u.headers = headers
-	}
-}
-
-// WithPassword allows the password portion of the user-info to be set.
-//
-// Use of a password is not advised and is inherently insecure. Use other
-// methods to ensure communication.
-func WithPassword(pass string) uriOption {
-	return func(u *URI) {
-		u.pass = pass
-	}
-}
-
-// Secure upgrades the URI to the SIPS protocol.
-func Secure() uriOption {
-	return func(u *URI) {
-		u.proto = SIPS
-	}
-}
-
-// New constructs a SIP URI with the given options.
-func New(user, host string, opts ...uriOption) URI {
-	u := URI{
-		user: user,
-		host: host,
-	}
-
-	for _, opt := range opts {
-		opt(&u)
-	}
-
-	return u
-}
-
-// Transport returns the Transport protocols that would be used to make a
+// Transport returns the Transport protocol that would be used to make a
 // connection to the host.
+//
+// The transport URI param takes priority otherwise falling back to the defaults
+// for the scheme.
 func (sipURI URI) Transport() string {
 	if transport := sipURI.Params().Get("transport"); transport != "" {
 		return strings.ToUpper(transport)
@@ -107,10 +65,25 @@ func (sipURI URI) Transport() string {
 	}
 }
 
-// Port returns the port split from the host portion returning the
-// defaults based on transport protocol & scheme if not present.
+// SplitHostPort splits the port from the host portion.
 //
-// Returns an empty string in the case of the sip proto & unexpected transport.
+// An empty string for the port (and no error) is returned if no port is
+// explicitly set.
+func (sipURI URI) SplitHostPort() (string, string, error) {
+	ipv6 := len(sipURI.host) > 0 && sipURI.host[0] == '['
+	colonCount := strings.Count(sipURI.host, ":")
+
+	if (!ipv6 && colonCount > 0) || (ipv6 && (colonCount%2 == 1 || sipURI.host[len(sipURI.host)-1] != ']')) {
+		return net.SplitHostPort(sipURI.host) //nolint:wrapcheck
+	}
+
+	return sipURI.host, "", nil
+}
+
+// Port returns the port explicitly set in the host portion, if not present
+// it returns the default based on scheme & transport protocol.
+//
+// Returns an empty string if the sip scheme has an unknown transport.
 func (sipURI URI) Port() string {
 	_, port, _ := sipURI.SplitHostPort()
 
@@ -136,7 +109,7 @@ func (sipURI URI) Port() string {
 	return ""
 }
 
-// String rebuilds the string representation of the URI respecting the quirks of the input.
+// String builds the string representation of the URI.
 //
 //nolint:cyclop
 func (sipURI URI) String() string {
@@ -150,42 +123,42 @@ func (sipURI URI) String() string {
 	}
 
 	if sipURI.user != "" {
-		builder.WriteString(escape(sipURI.user, encodeUserPassword))
+		builder.WriteString(internal.Escape(sipURI.user, internal.EncodeUserPassword))
 
 		if sipURI.hadPass || sipURI.pass != "" {
 			builder.WriteRune(':')
 		}
 
 		if sipURI.pass != "" {
-			builder.WriteString(escape(sipURI.pass, encodeUserPassword))
+			builder.WriteString(internal.Escape(sipURI.pass, internal.EncodeUserPassword))
 		}
 
 		builder.WriteByte('@') // only present when user is non-empty
 	}
 
-	builder.WriteString(escape(sipURI.host, encodeHost))
+	builder.WriteString(internal.Escape(sipURI.host, internal.EncodeHost))
 
-	if sipURI.hadParam || !sipURI.Params().Empty() {
+	if sipURI.hadParam || sipURI.Params().Len() > 0 {
 		builder.WriteByte(';')
 	}
 
-	if !sipURI.Params().Empty() {
+	if sipURI.Params().Len() > 0 {
 		builder.WriteString(sipURI.Params().Encode())
 	}
 
-	if sipURI.hadHeader || !sipURI.Headers().Empty() {
+	if sipURI.hadHeader || sipURI.Headers().Len() > 0 {
 		builder.WriteByte('?')
 	}
 
-	if !sipURI.Headers().Empty() {
+	if sipURI.Headers().Len() > 0 {
 		builder.WriteString(sipURI.Headers().Encode())
 	}
 
 	return builder.String()
 }
 
-// Secure returns if the URI has been upgrade to the SIPS scheme.
-func (sipURI URI) Secure() Protocol {
+// Secure returns if the URI has been upgraded to the SIPS scheme.
+func (sipURI URI) Secure() bool {
 	return sipURI.proto == SIPS
 }
 
@@ -206,36 +179,28 @@ func (sipURI URI) Password() string {
 
 // Host returns the decoded host portion of the URI.
 //
-// You may want to use SplitHostPort.
+// You may want to use [URI.SplitHostPort] & [URI.Port].
 func (sipURI URI) Host() string {
 	return sipURI.host
 }
 
-// SplitHostPort splits the port from the host portion into.
-func (sipURI URI) SplitHostPort() (string, string, error) {
-	ipv6 := len(sipURI.host) > 0 && sipURI.host[0] == '['
-	colonCount := strings.Count(sipURI.host, ":")
-
-	if (!ipv6 && colonCount > 0) || (ipv6 && (colonCount%2 == 1 || sipURI.host[len(sipURI.host)-1] != ']')) {
-		return net.SplitHostPort(sipURI.host) //nolint:wrapcheck
-	}
-
-	return sipURI.host, "", nil
-}
-
-// Params returns the decoded params portion of the URI.
-func (sipURI URI) Params() KeyValueStore {
+// Params returns the decoded params portion of the URI. There may be none.
+//
+// The params are the key/values pairs after `;` but before `?`.
+func (sipURI URI) Params() internal.KeyValueStore {
 	if sipURI.params == nil {
-		return EmptyStore{}
+		return internal.EmptyStore{}
 	}
 
 	return sipURI.params
 }
 
-// Headers returns the decoded headers portion of the URI.
-func (sipURI URI) Headers() KeyValueStore {
+// Headers returns the decoded headers portion of the URI. There may be none.
+//
+// The headers are the key/values pairs after `?`.
+func (sipURI URI) Headers() internal.KeyValueStore {
 	if sipURI.headers == nil {
-		return EmptyStore{}
+		return internal.EmptyStore{}
 	}
 
 	return sipURI.headers

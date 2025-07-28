@@ -1,12 +1,13 @@
-package sipuri_test
+package internal_test
 
 import (
 	"errors"
+	"fmt"
 	"net/url"
-	"sort"
+	"reflect"
 	"testing"
 
-	"github.com/percivalalb/sipuri"
+	"github.com/percivalalb/sipuri/v2/internal"
 )
 
 func TestURLEncodeURLValues(t *testing.T) {
@@ -25,7 +26,7 @@ func TestURLEncodeURLValues(t *testing.T) {
 			"typical example",
 		},
 		{
-			sipuri.KeyValuePairs{
+			internal.KeyValuePairs{
 				"shapes":  []string{"square", "circle"},
 				"colours": []string{"red", "blue", "green"},
 			},
@@ -33,16 +34,23 @@ func TestURLEncodeURLValues(t *testing.T) {
 			"zero-length key-value pair",
 		},
 		{
-			sipuri.KeyValuePairs{
+			internal.KeyValuePairs{
 				"users": nil,
 			},
 			"",
 			"zero-length key-value pair",
 		},
+		{
+			internal.KeyValuePairs{
+				"a%a": []string{"%bb"},
+			},
+			"a%25a=%25bb",
+			"encoding percentage symbol",
+		},
 	}
 
 	for _, test := range tests {
-		got := sipuri.EncodeURLValues(test.input)
+		got := internal.EncodeURLValues(test.input)
 
 		equalF(t, test.expect, got, "%s: encodeURLValues(%v) = %q want %q",
 			test.msg, test.input, got, testQueryString)
@@ -54,35 +62,35 @@ func TestURLDecodeURLValues(t *testing.T) {
 
 	type test struct {
 		input  string
-		expect sipuri.KeyValuePairs
+		expect internal.KeyValuePairs
 		msg    string
 	}
 
 	tests := []test{
 		{
 			"transport=TCP",
-			sipuri.KeyValuePairs{
+			internal.KeyValuePairs{
 				"transport": {"TCP"},
 			},
 			"single key-value pair",
 		},
 		{
 			"transport=",
-			sipuri.KeyValuePairs{
+			internal.KeyValuePairs{
 				"transport": {""},
 			},
 			"singleton",
 		},
 		{
 			"transport",
-			sipuri.KeyValuePairs{
+			internal.KeyValuePairs{
 				"transport": {""},
 			},
 			"singleton",
 		},
 		{
 			"transport=TCP;user=percivalalb;group=polarbear",
-			sipuri.KeyValuePairs{
+			internal.KeyValuePairs{
 				"transport": {"TCP"},
 				"user":      {"percivalalb"},
 				"group":     {"polarbear"},
@@ -92,9 +100,9 @@ func TestURLDecodeURLValues(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		result, err := sipuri.DecodeURLValues(test.input, ";")
+		result, err := internal.DecodeURLValues(test.input, ";")
 
-		equalF(t, err, sipuri.UnescapeErrorChecker(test.input), "checker matches")
+		equalF(t, err, internal.UnescapeErrorChecker(test.input), "checker matches")
 
 		if err != nil {
 			t.Fatalf("err %v", err)
@@ -108,7 +116,7 @@ func TestUnescape(t *testing.T) {
 	t.Parallel()
 
 	expect := "cat=meow&dog=bark!&dog=woof@&mouse=ee  eeΔ&parrot=(hellow)"
-	got, _ := sipuri.Unescape(testQueryString)
+	got, _ := internal.Unescape(testQueryString)
 
 	equalF(t, expect, got, "Unescape(%q) = %q want %q", testQueryString, got, expect)
 }
@@ -116,126 +124,29 @@ func TestUnescape(t *testing.T) {
 func TestUnescapeError(t *testing.T) {
 	t.Parallel()
 
-	_, err := sipuri.Unescape("bark%2y")
+	_, err := internal.Unescape("bark%2y")
 
-	if !errors.Is(err, sipuri.EscapeError("%2y")) {
+	if !errors.Is(err, internal.URIEscapeError("%2y")) {
 		t.Fatalf("err %v", err)
 	}
 
-	equalF(t, err, sipuri.UnescapeErrorChecker("bark%2y"), "checker matches")
+	equalF(t, err, internal.UnescapeErrorChecker("bark%2y"), "checker matches")
 
-	_, err = sipuri.Unescape("bark%2")
+	_, err = internal.Unescape("bark%2")
 
-	if !errors.Is(err, sipuri.EscapeError("%2")) {
+	if !errors.Is(err, internal.URIEscapeError("%2")) {
 		t.Fatalf("err %v", err)
 	}
 
-	equalF(t, err, sipuri.UnescapeErrorChecker("bark%2"), "checker matches")
+	equalF(t, err, internal.UnescapeErrorChecker("bark%2"), "checker matches")
 
-	_, err = sipuri.Unescape("bark%")
+	_, err = internal.Unescape("bark%")
 
-	if !errors.Is(err, sipuri.EscapeError("%")) {
+	if !errors.Is(err, internal.URIEscapeError("%")) {
 		t.Fatalf("err %v", err)
 	}
 
-	equalF(t, err, sipuri.UnescapeErrorChecker("bark%"), "checker matches")
-}
-
-func TestKeyValueStore(t *testing.T) {
-	t.Parallel()
-
-	type test struct {
-		input        sipuri.KeyValueStore
-		expectValues map[string][]string
-		expectKeys   []string
-		msg          string
-	}
-
-	tests := []test{
-		{
-			sipuri.KeyValuePairs{},
-			map[string][]string{
-				"unknown": nil,
-			},
-			nil,
-			"empty key/value pairs",
-		},
-		{
-			sipuri.KeyValuePairs{
-				"key1": {""},
-			},
-			map[string][]string{
-				"key1": {""},
-			},
-			[]string{"key1"},
-			"key/value pairs single key",
-		},
-		{
-			sipuri.KeyValuePairs{
-				"animals":   {"cat", "dog", "parrot"},
-				"health":    {"good", "good", "good"},
-				"locations": {"england"},
-			},
-			map[string][]string{
-				"animals":   {"cat", "dog", "parrot"},
-				"health":    {"good", "good", "good"},
-				"locations": {"england"},
-			},
-			[]string{"animals", "health", "locations"},
-			"many key/value pairs",
-		},
-		{
-			sipuri.EmptyStore{},
-			map[string][]string{
-				"unknown": nil,
-			},
-			nil,
-			"empty store",
-		},
-		{
-			createLazyStore(t, "key1=value1&key2=value2&key3=value2&key1=value1", "&"),
-			map[string][]string{
-				"key1":    {"value1", "value1"},
-				"key2":    {"value2"},
-				"key3":    {"value2"},
-				"unknown": nil,
-			},
-			[]string{"key1", "key2", "key3"},
-			"lazy store",
-		},
-	}
-
-	for _, test := range tests {
-		for k, v := range test.expectValues {
-			var firstV string
-			if len(v) > 0 {
-				firstV = v[0]
-			}
-
-			equalF(t, firstV, test.input.Get(k), "%s: first value mismatch", test.msg)
-			equalF(t, v, test.input.GetAll(k), "%s: values mismatch", test.msg)
-		}
-
-		// Sorts as keys are returned in an arbitrary order.
-		keys := test.input.Keys()
-		sort.Strings(keys)
-
-		equalF(t, test.expectKeys, keys, "%s: keys mismatch", test.msg)
-
-		equalF(t, len(test.expectKeys), test.input.Len(), "%s: len mismatch", test.msg)
-	}
-}
-
-func createLazyStore(t *testing.T, input, separator string) *sipuri.LazyStore {
-	t.Helper()
-
-	s := &sipuri.LazyStore{}
-
-	if err := s.Decode(input, separator); err != nil {
-		t.Fatalf("err %v", err)
-	}
-
-	return s
+	equalF(t, err, internal.UnescapeErrorChecker("bark%"), "checker matches")
 }
 
 // func FuzzReverse(f *testing.F) {
@@ -272,7 +183,7 @@ func BenchmarkEncodeURLValues(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = sipuri.EncodeURLValues(query)
+		_ = internal.EncodeURLValues(query)
 	}
 }
 
@@ -288,7 +199,7 @@ func BenchmarkUnescape(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_, _ = sipuri.Unescape(testQueryString)
+		_, _ = internal.Unescape(testQueryString)
 	}
 }
 
@@ -303,4 +214,12 @@ func getTestURLValues() url.Values {
 	query.Add("mouse", "ee  eeΔ")
 
 	return query
+}
+
+func equalF(t *testing.T, e interface{}, g interface{}, m string, a ...interface{}) {
+	t.Helper()
+
+	if !reflect.DeepEqual(e, g) {
+		t.Fatalf(`%q != %q, %s`, e, g, fmt.Sprintf(m, a...))
+	}
 }

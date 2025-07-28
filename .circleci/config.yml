@@ -29,7 +29,7 @@ jobs:
       - run:
           name: Run tests
           command: |
-            gotestsum --junitfile report.xml --format testname -- -coverprofile=coverage.txt -race -v
+            gotestsum --junitfile report.xml --format testname -- -coverprofile=coverage.txt -race -v ./...
             go tool cover -html=coverage.txt -o coverage.html
       - store_test_results:
           path: report.xml

@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/percivalalb/sipuri"
+	"github.com/percivalalb/sipuri/v2"
 )
 
 //nolint:gochecknoglobals
@@ -30,10 +30,10 @@ func TestParse(t *testing.T) {
 			"user",
 			"host:port",
 			sipuri.WithPassword("password"),
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"uri-parameters": {""},
 			}),
-			sipuri.WithHeaders(sipuri.KeyValuePairs{
+			sipuri.WithHeaders(sipuri.Headers{
 				"headers": {""},
 			}),
 		), "UDP", "template uri"},
@@ -47,7 +47,7 @@ func TestParse(t *testing.T) {
 			"alice",
 			"atlanta.com",
 			sipuri.WithPassword("secretword"),
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"transport": {"tcp"},
 			}),
 		), "TCP", "RFC example #1"},
@@ -55,7 +55,7 @@ func TestParse(t *testing.T) {
 			"alice",
 			"atlanta.com",
 			sipuri.Secure(),
-			sipuri.WithHeaders(sipuri.KeyValuePairs{
+			sipuri.WithHeaders(sipuri.Headers{
 				"subject":  {"project x"},
 				"priority": {"urgent"},
 			}),
@@ -64,7 +64,7 @@ func TestParse(t *testing.T) {
 			"+1-212-555-1212",
 			"gateway.com",
 			sipuri.WithPassword("1234"),
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"user": {"phone"},
 			}),
 		), "UDP", "RFC example #3"},
@@ -80,10 +80,10 @@ func TestParse(t *testing.T) {
 		{"sip:atlanta.com;method=REGISTER?to=alice%40atlanta.com", sipuri.New(
 			"",
 			"atlanta.com",
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"method": {"REGISTER"},
 			}),
-			sipuri.WithHeaders(sipuri.KeyValuePairs{
+			sipuri.WithHeaders(sipuri.Headers{
 				"to": {"alice@atlanta.com"},
 			}),
 		), "UDP", "RFC example #6"},
@@ -106,14 +106,14 @@ func TestParse(t *testing.T) {
 		{"sip:bob@nokia.com;transport=tcp", sipuri.New(
 			"bob",
 			"nokia.com",
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"transport": {"tcp"},
 			}),
 		), "TCP", "O'Reilly example #2"},
 		{"sip:+1-212-555-1234@gw.com;user=phone", sipuri.New(
 			"+1-212-555-1234",
 			"gw.com",
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"user": {"phone"},
 			}),
 		), "UDP", "O'Reilly example #3"},
@@ -124,7 +124,7 @@ func TestParse(t *testing.T) {
 		{"sip:bob.smith@registrar.com;method=REGISTER", sipuri.New(
 			"bob.smith",
 			"registrar.com",
-			sipuri.WithParams(sipuri.KeyValuePairs{
+			sipuri.WithParams(sipuri.Params{
 				"method": {"REGISTER"},
 			}),
 		), "UDP", "O'Reilly example #5"},
@@ -171,62 +171,62 @@ func TestParseError(t *testing.T) {
 	tests := []test{
 		{
 			"user@example.sip.twilio.com;transport=TCP",
-			sipuri.ErrInvalidScheme,
+			sipuri.MalformedError{Cause: sipuri.InvalidScheme},
 			"no scheme present",
 		},
 		{
 			"sip:user@",
-			sipuri.MalformedURIError{Cause: sipuri.MissingHost},
+			sipuri.MalformedError{Cause: sipuri.MissingHost},
 			"no host present",
 		},
 		{
 			"sip:@",
-			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			sipuri.MalformedError{Cause: sipuri.MissingUser},
 			"lonely at symbol",
 		},
 		{
 			"sip:@;",
-			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			sipuri.MalformedError{Cause: sipuri.MissingUser},
 			"lonely at symbol",
 		},
 		{
 			"sip:user@;",
-			sipuri.MalformedURIError{Cause: sipuri.MissingHost},
+			sipuri.MalformedError{Cause: sipuri.MissingHost},
 			"lonely at symbol",
 		},
 		{
 			"sip:@example.sip.twilio.com",
-			sipuri.MalformedURIError{Cause: sipuri.MissingUser},
+			sipuri.MalformedError{Cause: sipuri.MissingUser},
 			"no user present",
 		},
 		{
 			"sip:%xx@example.sip.twilio.com",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedUser},
+			sipuri.MalformedError{Cause: sipuri.MalformedUser},
 			"malformed url encoded users",
 		},
 		{
 			"sip:user@%xxexample.sip.twilio.com",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			sipuri.MalformedError{Cause: sipuri.MalformedHost},
 			"malformed url encoded host",
 		},
 		{
 			"sip:%xxexample.sip.twilio.com",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			sipuri.MalformedError{Cause: sipuri.MalformedHost},
 			"malformed url encoded host",
 		},
 		{
 			"sip:user@example.sip.twilio.com;%xx",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedParams},
+			sipuri.MalformedError{Cause: sipuri.MalformedParams},
 			"malformed url encoded params",
 		},
 		{
 			"sip:user@example.sip.twilio.com?%xx",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedHeaders},
+			sipuri.MalformedError{Cause: sipuri.MalformedHeaders},
 			"malformed url encoded headers",
 		},
 		{
 			"sip:[::1",
-			sipuri.MalformedURIError{Cause: sipuri.MalformedHost},
+			sipuri.MalformedError{Cause: sipuri.MalformedHost},
 			"malformed ipv6 host",
 		},
 	}
@@ -250,7 +250,7 @@ func ExampleParse() {
 		panic(err)
 	}
 
-	// Print the consistent components
+	// Print the constituent components:
 	fmt.Println(sipURI.User())
 	fmt.Println(sipURI.Password())
 	fmt.Println(sipURI.Host())
@@ -258,7 +258,7 @@ func ExampleParse() {
 	fmt.Printf("%q\n", sipURI.Headers().GetAll("headers"))
 	fmt.Printf("%q\n", sipURI.Headers().Keys())
 
-	// Re-construct the URI
+	// Re-construct the URI:
 	fmt.Println(sipURI.String())
 
 	// Output:
