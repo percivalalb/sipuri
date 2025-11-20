@@ -259,28 +259,35 @@ func Unescape(input string) (string, error) {
 // It is a stripped down version of [Unescape] without actually extracting the parts
 // or decoding the string it returns an error if and only if the aforementioned does.
 func UnescapeErrorChecker(input string) error {
-	l := len(input)
+	length := len(input)
 
-	switch {
-	case l == 0:
-		return nil
-	case input[l-1] == '%':
-		return URIEscapeError("%")
-	case input[l-2] == '%':
-		return URIEscapeError(input[l-2:])
-	}
+	for pos := 0; pos < length; pos++ {
+		if input[pos] != '%' {
+			continue
+		}
 
-	for pos := 0; pos < l; pos++ {
-		if input[pos] == '%' {
-			gByte := checkValidHexCharacter(input[pos+1])
-			lByte := checkValidHexCharacter(input[pos+2])
+		// Default to error. Only if there is 2 more valid hex characters
+		// can this be avoided.
+		gByte, lByte := hexCharErrorBit, hexCharErrorBit
 
-			if (gByte|lByte)&hexCharErrorBit != 0 {
-				return URIEscapeError(input[pos : pos+3])
+		if pos+1 < length {
+			gByte = checkValidHexCharacter(input[pos+1])
+		}
+
+		if pos+2 < length {
+			lByte = checkValidHexCharacter(input[pos+2])
+		}
+
+		if (gByte|lByte)&hexCharErrorBit != 0 {
+			end := pos + 3 //nolint:mnd // can use min(pos+3, l) when targeting 1.21+
+			if end > length {
+				end = length
 			}
 
-			pos += 2
+			return URIEscapeError(input[pos:end])
 		}
+
+		pos += 2
 	}
 
 	return nil
