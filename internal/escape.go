@@ -86,7 +86,7 @@ func Escape(input string, mode encoding) string {
 	required := len(input) + 2*hexCount //nolint:mnd
 	result := make([]byte, required)
 
-	escapeInto(input, 0, result)
+	mode.escapeInto(input, 0, result)
 
 	return string(result)
 }
@@ -188,9 +188,9 @@ func EncodeURLValues(input map[string][]string) string {
 				pos++
 			}
 
-			pos = escapeInto(key, pos, result)
+			pos = EncodeQueryComponent.escapeInto(key, pos, result)
 			result[pos] = '='
-			pos = escapeInto(val, pos+1, result)
+			pos = EncodeQueryComponent.escapeInto(val, pos+1, result)
 		}
 	}
 
@@ -201,10 +201,10 @@ const upperhex = "0123456789ABCDEF"
 
 // escapeInto escapes all of "input", writing the "result" into target
 // starting at index "offset".
-func escapeInto(input string, offset int, target []byte) int {
+func (mode encoding) escapeInto(input string, offset int, target []byte) int {
 	for pos := 0; pos < len(input); pos++ {
 		switch c := input[pos]; {
-		case EncodeQueryComponent.shouldEscape(c):
+		case mode.shouldEscape(c):
 			target[offset] = '%'
 			target[offset+1] = upperhex[c>>4]
 			target[offset+2] = upperhex[c&15]
