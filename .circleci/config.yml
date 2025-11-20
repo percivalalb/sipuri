@@ -31,6 +31,11 @@ jobs:
           command: |
             gotestsum --junitfile report.xml --format testname -- -coverprofile=coverage.txt -race -v ./...
             go tool cover -html=coverage.txt -o coverage.html
+      - run:
+          name: Run fuzz
+          command: |
+             go test -fuzz=FuzzNew --fuzztime=10s -parallel=3
+             go test -fuzz=FuzzParse --fuzztime=10s -parallel=3
       - store_test_results:
           path: report.xml
       - store_artifacts:

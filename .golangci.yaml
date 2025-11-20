@@ -38,6 +38,10 @@ linters:
       - linters:
           - ireturn
         path: sipuri\.go
+      - linters:
+          - cyclop
+          - gocognit
+        text: 'func(tion)? `?Fuzz'
     paths:
       - third_party$
       - builtin$
