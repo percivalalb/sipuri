@@ -124,29 +124,33 @@ func TestUnescape(t *testing.T) {
 func TestUnescapeError(t *testing.T) {
 	t.Parallel()
 
-	_, err := internal.Unescape("bark%2y")
+	for _, testCase := range []struct {
+		input string
+		err   error
+	}{{
+		input: "bark%2y",
+		err:   internal.URIEscapeError("%2y"),
+	}, {
+		input: "bark%2",
+		err:   internal.URIEscapeError("%2"),
+	}, {
+		input: "bark%",
+		err:   internal.URIEscapeError("%2"),
+	}, {
+		input: "ba%~#rkda%~#",
+		err:   internal.URIEscapeError("%~#"),
+	}, {
+		input: "ba%~#rkda%e",
+		err:   internal.URIEscapeError("%~"),
+	}} {
+		_, err := internal.Unescape(testCase.input)
 
-	if !errors.Is(err, internal.URIEscapeError("%2y")) {
-		t.Fatalf("err %v", err)
+		if !errors.Is(err, testCase.err) {
+			t.Fatalf("err %v", err)
+		}
+
+		equalF(t, err, internal.UnescapeErrorChecker(testCase.input), "checker matches")
 	}
-
-	equalF(t, err, internal.UnescapeErrorChecker("bark%2y"), "checker matches")
-
-	_, err = internal.Unescape("bark%2")
-
-	if !errors.Is(err, internal.URIEscapeError("%2")) {
-		t.Fatalf("err %v", err)
-	}
-
-	equalF(t, err, internal.UnescapeErrorChecker("bark%2"), "checker matches")
-
-	_, err = internal.Unescape("bark%")
-
-	if !errors.Is(err, internal.URIEscapeError("%")) {
-		t.Fatalf("err %v", err)
-	}
-
-	equalF(t, err, internal.UnescapeErrorChecker("bark%"), "checker matches")
 }
 
 // func FuzzReverse(f *testing.F) {

@@ -231,9 +231,12 @@ func Unescape(input string) (string, error) {
 
 			i += 2
 
-			// not enought characters for
+			// not enought characters for hex-encoding
 			if i >= len(input) {
-				return "", URIEscapeError(input[i-2:])
+				// Normally an error would be return directly here but to ensure, the order
+				// in which the errors are returned is consistent between [UnescapeErrorChecker]
+				// we just call it if we know there will be an error.
+				return "", UnescapeErrorChecker(input)
 			}
 		}
 	}
