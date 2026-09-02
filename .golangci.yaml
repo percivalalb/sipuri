@@ -3,10 +3,12 @@ version: '2'
 linters:
   default: all
   disable:
-    - exhaustruct # is only intended for use in special cases.
-    - noinlineerr # personal preference
+    - exhaustruct_v5 # is only intended for use in special cases.
+    - noinlineerr    # personal preference
     - recvcheck
-    - wsl         # deprecated and replaced by wsl_v5
+    - exhaustruct    # deprecated and replaced by exhaustruct_v5
+    - gomodguard     # deprecated and replaced by gomodguard_v2
+    - wsl            # deprecated and replaced by wsl_v5
   settings:
     depguard:
       # Only allow imports from the stdlib & this module
@@ -26,6 +28,7 @@ linters:
       # exclude some linters on test files.
       - linters:
           - funlen # some test functions can be long.
+          - goconst
         path: _test\.go
       - linters:
           - golint
