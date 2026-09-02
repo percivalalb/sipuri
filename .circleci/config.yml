@@ -45,11 +45,13 @@ workflows:
   test:
     jobs:
       - golangci-lint/lint:
-          tag: 'v2.4.0'
+          tag: 'v2.13.2'
       - test:
           matrix:
             parameters:
               version:
+                - '1.27'
+                - '1.26'
                 - '1.25'
                 - '1.24'
                 - '1.23'

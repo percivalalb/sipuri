@@ -216,7 +216,7 @@ func getTestURLValues() url.Values {
 	return query
 }
 
-func equalF(t *testing.T, e interface{}, g interface{}, m string, a ...interface{}) {
+func equalF(t *testing.T, e any, g any, m string, a ...any) {
 	t.Helper()
 
 	if !reflect.DeepEqual(e, g) {
